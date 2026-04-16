@@ -1,6 +1,6 @@
 // DashboardAluno.tsx - Student Dashboard View
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { User, ClassSession, GroupEvent, MusicItem, HomeTraining, UniformOrder, SchoolReport, EventRegistration, PaymentRecord, StudentGrade } from '../types';
+import { User, ClassSession, GroupEvent, MusicItem, HomeTraining, UniformOrder, UniformItem, SchoolReport, EventRegistration, PaymentRecord, StudentGrade } from '../types';
 import { APPoints } from './APPoints';
 import { useLanguage } from '../src/i18n/LanguageContext';
 import { Calendar, Award, Music, Video, Instagram, MapPin, Copy, Check, Ticket, Wallet, Info, X, UploadCloud, Clock, AlertTriangle, ArrowLeft, AlertCircle, GraduationCap, FileText, Shirt, ShoppingBag, Camera, Eye, PlayCircle, DollarSign, FileUp, MessageCircle, PlusCircle, Activity, BookOpen, CheckCircle } from 'lucide-react';
@@ -18,6 +18,7 @@ interface Props {
   events: GroupEvent[];
   musicList: MusicItem[];
   uniformOrders: UniformOrder[];
+  uniformItems?: UniformItem[];
   onAddOrder: (order: Omit<UniformOrder, 'id' | 'created_at'>) => void;
   onNotifyAdmin: (action: string, user: User) => void;
   onUpdateProfile: (data: Partial<User>) => void;
@@ -153,6 +154,7 @@ export const DashboardAluno: React.FC<Props> = ({
   events,
   musicList,
   uniformOrders,
+  uniformItems = [],
   onAddOrder,
   onNotifyAdmin,
   onUpdateProfile,
@@ -677,15 +679,20 @@ export const DashboardAluno: React.FC<Props> = ({
     e.preventDefault();
 
     let price = 0;
-    let itemName = '';
-    let details = '';
     let itemLabel = '';
+    const customItem = uniformItems.find(item => item.id === orderForm.item);
 
     switch (orderForm.item) {
       case 'shirt': itemLabel = t('aluno.uniform.shirt_official'); price = uniformPrices.shirt; break;
       case 'pants_roda': itemLabel = t('aluno.uniform.pants_roda'); price = uniformPrices.pants_roda; break;
       case 'pants_train': itemLabel = t('aluno.uniform.pants_train'); price = uniformPrices.pants_train; break;
       case 'combo': itemLabel = t('aluno.uniform.combo'); price = uniformPrices.combo; break;
+      default:
+        if (customItem) {
+          itemLabel = customItem.title;
+          price = customItem.price ?? 0;
+        }
+        break;
     }
 
     if (orderForm.item === 'shirt' && !orderForm.shirtSize) { alert(t('aluno.uniform.error_size_shirt')); return; }
@@ -712,6 +719,8 @@ export const DashboardAluno: React.FC<Props> = ({
 
   // Helper to get current price for display
   const getCurrentPrice = () => {
+    const customItem = uniformItems.find(item => item.id === orderForm.item);
+    if (customItem) return customItem.price ?? 0;
     switch (orderForm.item) {
       case 'shirt': return uniformPrices.shirt;
       case 'pants_roda': return uniformPrices.pants_roda;
@@ -720,6 +729,8 @@ export const DashboardAluno: React.FC<Props> = ({
       default: return 0;
     }
   };
+
+  const selectedCustomUniformItem = uniformItems.find(item => item.id === orderForm.item);
 
   const handleOpenEventRegisterModal = (event: GroupEvent) => {
     setSelectedEventToRegister(event);
@@ -2087,8 +2098,20 @@ export const DashboardAluno: React.FC<Props> = ({
                       <option value="shirt">Blusa Oficial</option>
                       <option value="pants_roda">Calça de Roda</option>
                       <option value="pants_train">Calça de Treino</option>
+                      {uniformItems.map(item => (
+                        <option key={item.id} value={item.id}>{item.title}</option>
+                      ))}
                     </select>
                   </div>
+                  {selectedCustomUniformItem && (
+                    <div className="bg-sky-50 border border-sky-200 rounded-xl overflow-hidden">
+                      <img src={selectedCustomUniformItem.image_url} alt={selectedCustomUniformItem.title} className="w-full h-44 object-cover" />
+                      <div className="p-3">
+                        <p className="font-bold text-gray-900">{selectedCustomUniformItem.title}</p>
+                        {selectedCustomUniformItem.description && <p className="text-sm text-gray-600">{selectedCustomUniformItem.description}</p>}
+                      </div>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     {(orderForm.item === 'shirt' || orderForm.item === 'combo') && (
                       <div>
@@ -2120,7 +2143,7 @@ export const DashboardAluno: React.FC<Props> = ({
                     )}
                   </div>
                   <div className="text-right text-gray-900 font-bold text-lg">
-                    Total: R$ {getCurrentPrice().toFixed(2).replace('.', ',')}
+                    Total: {selectedCustomUniformItem ? (selectedCustomUniformItem.price == null ? 'Sob consulta' : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`) : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`}
                   </div>
                   <Button fullWidth type="submit">
                     <ShoppingBag size={18} className="mr-1" /> Fazer Pedido
@@ -2144,7 +2167,7 @@ export const DashboardAluno: React.FC<Props> = ({
                           <p className="text-gray-600 text-xs">Pedido em: {order.date}</p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <span className="text-green-700 font-bold">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                          <span className="text-green-700 font-bold">{order.total > 0 ? `R$ ${order.total.toFixed(2).replace('.', ',')}` : 'Sob consulta'}</span>
                           {order.status === 'pending' && <span className="px-2 py-1 rounded bg-yellow-900/30 text-yellow-700 text-xs border border-yellow-900/50">Pendente</span>}
                           {order.status === 'ready' && <span className="px-2 py-1 rounded bg-blue-900/30 text-blue-700 text-xs border border-sky-300">Pago/Pronto</span>}
                           {order.status === 'delivered' && <span className="px-2 py-1 rounded bg-green-900/30 text-green-700 text-xs border border-green-900/50">Entregue</span>}

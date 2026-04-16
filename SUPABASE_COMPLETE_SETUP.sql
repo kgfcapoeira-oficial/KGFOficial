@@ -232,6 +232,16 @@ CREATE TABLE IF NOT EXISTS public.uniform_orders (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS public.uniform_items (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT DEFAULT '',
+  image_url TEXT NOT NULL,
+  price NUMERIC,
+  created_by UUID REFERENCES public.profiles(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- --------------------------------------------------------
 -- 6. CHAT GLOBAL, NOTIFICAÇÕES E APPOINTS
 -- --------------------------------------------------------

@@ -41,7 +41,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Data Models
 - TypeScript interfaces defined in `types.ts` at root level
-- Key entities: User, ClassSession, GroupEvent, Assignment, PaymentRecord, UniformOrder, StudentGrade, MusicItem, HomeTraining, SchoolReport, EventRegistration
+- Key entities: User, ClassSession, GroupEvent, Assignment, PaymentRecord, UniformOrder, UniformItem, StudentGrade, MusicItem, HomeTraining, SchoolReport, EventRegistration
+- Uniform/Orders now supports admin-managed custom catalog items through `uniform_items` with photo URL, title, description, nullable price, creator, and created timestamp. Item photos are uploaded into the public Supabase `materials` bucket under `uniform-items/`.
 - FFPoints system: FFTask, FFTaskCompletion, FFReward, FFRedemption
 
 ### FFPoints Rewards System

@@ -9,7 +9,7 @@ import { DashboardAdmin } from './views/DashboardAdmin';
 import { ProfileSetup } from './src/pages/ProfileSetup';
 import { SessionContextProvider, useSession } from './src/components/SessionContextProvider';
 import { isSupabaseConfigured, supabase } from './src/integrations/supabase/client';
-import { User, GroupEvent, AdminNotification, MusicItem, UniformOrder, UserRole, HomeTraining, SchoolReport, Assignment, PaymentRecord, ClassSession, EventRegistration, StudentGrade, GradeCategory, LessonPlan, EventBanner } from './types';
+import { User, GroupEvent, AdminNotification, MusicItem, UniformOrder, UniformItem, UserRole, HomeTraining, SchoolReport, Assignment, PaymentRecord, ClassSession, EventRegistration, StudentGrade, GradeCategory, LessonPlan, EventBanner } from './types';
 import { GlobalChat } from './src/components/GlobalChat';
 import { BannerPopup } from './src/components/BannerPopup';
 
@@ -25,6 +25,7 @@ function AppContent() {
   const [events, setEvents] = useState<GroupEvent[]>([]);
   const [musicList, setMusicList] = useState<MusicItem[]>([]);
   const [uniformOrders, setUniformOrders] = useState<UniformOrder[]>([]);
+  const [uniformItems, setUniformItems] = useState<UniformItem[]>([]);
   const [adminNotifications, setAdminNotifications] = useState<AdminNotification[]>([]);
   const [homeTrainings, setHomeTrainings] = useState<HomeTraining[]>([]);
   const [schoolReports, setSchoolReports] = useState<SchoolReport[]>([]);
@@ -186,6 +187,13 @@ function AppContent() {
       });
       setUniformPrices(pricesConfig);
     }
+
+    const { data: uniformItemsData, error: uniformItemsError } = await supabase
+      .from('uniform_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (uniformItemsError) console.error('Error fetching uniform items:', uniformItemsError);
+    else setUniformItems(uniformItemsData || []);
 
     // Fetch Admin Notifications (for all admin users - shows all users' activities)
     if (userRole === 'admin') {
@@ -771,6 +779,27 @@ function AppContent() {
     }
   };
 
+  const handleAddUniformItem = async (item: Omit<UniformItem, 'id' | 'created_at'>) => {
+    const { data, error } = await supabase.from('uniform_items').insert(item).select().single();
+    if (error) {
+      console.error('Error adding uniform item:', error);
+      alert('Erro ao cadastrar item: ' + error.message);
+      throw error;
+    }
+    setUniformItems(prev => [data, ...prev]);
+    if (user) handleNotifyAdmin(`Cadastrou item: ${item.title}`, user);
+  };
+
+  const handleDeleteUniformItem = async (itemId: string) => {
+    const { error } = await supabase.from('uniform_items').delete().eq('id', itemId);
+    if (error) {
+      console.error('Error deleting uniform item:', error);
+      alert('Erro ao remover item: ' + error.message);
+      throw error;
+    }
+    setUniformItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
   const handleAddHomeTraining = async (newTraining: Omit<HomeTraining, 'id' | 'created_at'>) => {
     const { data, error } = await supabase.from('home_trainings').insert(newTraining).select().single();
     if (error) {
@@ -1151,6 +1180,7 @@ function AppContent() {
               events={events.filter(e => e.status !== 'cancelled')}
               musicList={musicList}
               uniformOrders={uniformOrders.filter(order => order.user_id === user.id)} // Pass only student's orders
+              uniformItems={uniformItems}
               onAddOrder={handleAddOrder}
               onNotifyAdmin={handleNotifyAdmin}
               onUpdateProfile={handleUpdateProfile}
@@ -1178,6 +1208,7 @@ function AppContent() {
               events={events.filter(e => e.status !== 'cancelled')}
               musicList={musicList}
               uniformOrders={uniformOrders.filter(order => order.user_id === user.id)} // Pass only professor's orders
+              uniformItems={uniformItems}
               onAddOrder={handleAddOrder}
               onAddMusic={handleAddMusic}
               onNotifyAdmin={handleNotifyAdmin}
@@ -1219,6 +1250,7 @@ function AppContent() {
               onClearNotifications={handleClearNotifications}
               musicList={musicList}
               uniformOrders={uniformOrders}
+              uniformItems={uniformItems}
               onAddOrder={handleAddOrder}
               onUpdateOrderStatus={handleUpdateOrderStatus}
               onAddMusic={handleAddMusic}
@@ -1255,6 +1287,8 @@ function AppContent() {
               onDeleteLessonPlan={handleDeleteLessonPlan}
               uniformPrices={uniformPrices}
               onUpdateUniformPrice={handleUpdateUniformPrice}
+              onAddUniformItem={handleAddUniformItem}
+              onDeleteUniformItem={handleDeleteUniformItem}
             />
           )}
         </div>

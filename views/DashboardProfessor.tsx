@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import heic2any from "heic2any";
 import { QRCodeSVG } from 'qrcode.react';
 import { generatePixPayload } from '../src/utils/pix';
-import { User, GroupEvent, MusicItem, UniformOrder, ClassSession, Assignment as AssignmentType, StudentGrade, GradeCategory, LessonPlan } from '../types';
+import { User, GroupEvent, MusicItem, UniformOrder, UniformItem, ClassSession, Assignment as AssignmentType, StudentGrade, GradeCategory, LessonPlan } from '../types';
 import { APPoints } from './APPoints';
 import { useLanguage } from '../src/i18n/LanguageContext';
 
@@ -18,6 +18,7 @@ interface Props {
   events: GroupEvent[];
   musicList: MusicItem[];
   uniformOrders: UniformOrder[];
+  uniformItems?: UniformItem[];
   onAddOrder: (order: Omit<UniformOrder, 'id' | 'created_at'>) => void;
   onAddMusic: (music: Omit<MusicItem, 'id' | 'created_at'>) => void;
   onNotifyAdmin: (action: string, user: User) => void;
@@ -92,6 +93,7 @@ export const DashboardProfessor: React.FC<Props> = ({
   events,
   musicList,
   uniformOrders,
+  uniformItems = [],
   onAddOrder,
   onAddMusic,
   onNotifyAdmin,
@@ -499,6 +501,8 @@ id,
   // Filter my orders - removed duplicate const to keep useState version
 
   const getCurrentPrice = () => {
+    const customItem = uniformItems.find(item => item.id === orderForm.item);
+    if (customItem) return customItem.price ?? 0;
     switch (orderForm.item) {
       case 'shirt': return uniformPrices.shirt;
       case 'pants_roda': return uniformPrices.pants_roda;
@@ -507,6 +511,7 @@ id,
       default: return 0;
     }
   };
+  const selectedCustomUniformItem = uniformItems.find(item => item.id === orderForm.item);
 
   // Belt Bar Style with Ponta support
   const beltColors = useMemo(() => {
@@ -1014,11 +1019,13 @@ id,
     e.preventDefault();
     let price = 0;
     let itemName = '';
+    const customItem = uniformItems.find(item => item.id === orderForm.item);
 
     if (orderForm.item === 'shirt') { price = uniformPrices.shirt; itemName = 'Blusa Oficial'; }
     else if (orderForm.item === 'pants_roda') { price = uniformPrices.pants_roda; itemName = 'Calça de Roda'; }
     else if (orderForm.item === 'pants_train') { price = uniformPrices.pants_train; itemName = 'Calça de Treino'; }
     else if (orderForm.item === 'combo') { price = uniformPrices.combo; itemName = 'Combo'; }
+    else if (customItem) { price = customItem.price ?? 0; itemName = customItem.title; }
 
     const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
       user_id: user.id,
@@ -1029,7 +1036,7 @@ id,
       total: price,
       status: 'pending',
       shirt_size: (orderForm.item === 'shirt' || orderForm.item === 'combo') ? orderForm.shirtSize : undefined,
-      pants_size: (orderForm.item !== 'shirt') ? orderForm.pantsSize : undefined,
+      pants_size: (orderForm.item === 'pants_roda' || orderForm.item === 'pants_train' || orderForm.item === 'combo') ? orderForm.pantsSize : undefined,
     };
     onAddOrder(newOrder as UniformOrder);
     onNotifyAdmin(`${user.role === 'admin' ? 'Admin' : 'Professor'} solicitou uniforme: ${itemName}`, user);
@@ -2126,8 +2133,20 @@ id,
                     <option value="shirt">{t('prof.uniform.item_shirt')}</option>
                     <option value="pants_roda">{t('prof.uniform.item_pants_roda')}</option>
                     <option value="pants_train">{t('prof.uniform.item_pants_train')}</option>
+                    {uniformItems.map(item => (
+                      <option key={item.id} value={item.id}>{item.title}</option>
+                    ))}
                   </select>
                 </div>
+                {selectedCustomUniformItem && (
+                  <div className="bg-sky-50 border border-sky-200 rounded-xl overflow-hidden">
+                    <img src={selectedCustomUniformItem.image_url} alt={selectedCustomUniformItem.title} className="w-full h-44 object-cover" />
+                    <div className="p-3">
+                      <p className="font-bold text-gray-900">{selectedCustomUniformItem.title}</p>
+                      {selectedCustomUniformItem.description && <p className="text-sm text-gray-600">{selectedCustomUniformItem.description}</p>}
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   {(orderForm.item === 'shirt' || orderForm.item === 'combo') && (
                     <div>
@@ -2160,7 +2179,7 @@ id,
                 </div>
                 <div className="flex justify-between items-center bg-sky-100 p-4 rounded-xl border border-sky-300 mt-2">
                   <span className="text-gray-600 text-sm font-bold">{t('prof.uniform.total_pay')}</span>
-                  <span className="text-xl font-black text-gray-900">R$ {getCurrentPrice().toFixed(2).replace('.', ',')}</span>
+                  <span className="text-xl font-black text-gray-900">{selectedCustomUniformItem ? (selectedCustomUniformItem.price == null ? 'Sob consulta' : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`) : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`}</span>
                 </div>
                 <Button fullWidth type="submit" className="h-12 bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20">
                   <ShoppingBag size={18} className="mr-2" /> {t('prof.uniform.submit')}
@@ -2179,7 +2198,7 @@ id,
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-bold text-gray-900">{order.item}</p>
-                          <p className="text-gray-600 text-xs">R$ {order.total.toFixed(2).replace('.', ',')} - {order.date}</p>
+                          <p className="text-gray-600 text-xs">{order.total > 0 ? `R$ ${order.total.toFixed(2).replace('.', ',')}` : 'Sob consulta'} - {order.date}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           {order.status === 'pending' && <span className="px-2 py-1 rounded bg-yellow-900/30 text-yellow-700 text-[10px] font-black uppercase border border-yellow-900/50">{t('prof.uniform.status_pending')}</span>}

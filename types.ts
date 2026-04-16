@@ -184,6 +184,16 @@ export interface UniformOrder {
   proof_name?: string; // Nome do arquivo do comprovante
 }
 
+export interface UniformItem {
+  id: string;
+  title: string;
+  description?: string;
+  image_url: string;
+  price?: number | null;
+  created_by?: string;
+  created_at?: string;
+}
+
 export type GradeCategory = 'theory' | 'movement' | 'musicality';
 
 export interface StudentGrade {

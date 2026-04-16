@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import heic2any from "heic2any";
-import { User, GroupEvent, PaymentRecord, AdminNotification, MusicItem, UserRole, UniformOrder, ALL_BELTS, HomeTraining, SchoolReport, Assignment, EventRegistration, ClassSession, StudentGrade, GradeCategory, LessonPlan, EventBanner } from '../types';
+import { User, GroupEvent, PaymentRecord, AdminNotification, MusicItem, UserRole, UniformOrder, UniformItem, ALL_BELTS, HomeTraining, SchoolReport, Assignment, EventRegistration, ClassSession, StudentGrade, GradeCategory, LessonPlan, EventBanner } from '../types';
 import { APPoints } from './APPoints';
 import { useLanguage } from '../src/i18n/LanguageContext';
 
@@ -28,6 +28,7 @@ interface Props {
     onUpdateProfile: (data: Partial<User>) => void;
     // Uniforms props
     uniformOrders: UniformOrder[];
+    uniformItems?: UniformItem[];
     onAddOrder: (newOrder: Omit<UniformOrder, 'id' | 'created_at'>) => Promise<void>;
     onUpdateOrderStatus: (orderId: string, status: 'pending' | 'ready' | 'delivered') => void;
     // New props for student details
@@ -65,6 +66,8 @@ interface Props {
     onDeleteLessonPlan?: (planId: string) => Promise<void>;
     uniformPrices?: Record<string, number>;
     onUpdateUniformPrice?: (item: string, price: number) => Promise<void>;
+    onAddUniformItem?: (item: Omit<UniformItem, 'id' | 'created_at'>) => Promise<void>;
+    onDeleteUniformItem?: (itemId: string) => Promise<void>;
 }
 
 
@@ -300,6 +303,7 @@ export const DashboardAdmin: React.FC<Props> = ({
     onNotifyAdmin = (_action: string, _user: User) => { },
     onUpdateProfile,
     uniformOrders = [],
+    uniformItems = [],
     onAddOrder,
     onUpdateOrderStatus,
     schoolReports = [],
@@ -333,7 +337,9 @@ export const DashboardAdmin: React.FC<Props> = ({
     onUpdateLessonPlan,
     onDeleteLessonPlan,
     uniformPrices = { shirt: 0, pants_roda: 0, pants_train: 0, combo: 0 },
-    onUpdateUniformPrice = async () => {}
+    onUpdateUniformPrice = async () => {},
+    onAddUniformItem = async () => {},
+    onDeleteUniformItem = async () => {}
 }) => {
 
     const { session } = useSession();
@@ -361,6 +367,9 @@ export const DashboardAdmin: React.FC<Props> = ({
     const [uploadingUniformProof, setUploadingUniformProof] = useState(false);
     const [selectedOrderToProof, setSelectedOrderToProof] = useState<UniformOrder | null>(null);
     const [costPixCopied, setCostPixCopied] = useState(false);
+    const [uniformItemForm, setUniformItemForm] = useState({ title: '', description: '', price: '' });
+    const [uniformItemImage, setUniformItemImage] = useState<File | null>(null);
+    const [uploadingUniformItem, setUploadingUniformItem] = useState(false);
     // Uniform Prices State
     const [viewUniformConfig, setViewUniformConfig] = useState(false);
     const [priceConfigForm, setPriceConfigForm] = useState({ shirt: '', pants_roda: '', pants_train: '', combo: '' });
@@ -384,6 +393,8 @@ export const DashboardAdmin: React.FC<Props> = ({
     };
 
     const getCurrentPrice = () => {
+        const customItem = uniformItems.find(item => item.id === orderForm.item);
+        if (customItem) return customItem.price ?? 0;
         switch (orderForm.item) {
             case 'shirt': return uniformPrices.shirt;
             case 'pants_roda': return uniformPrices.pants_roda;
@@ -392,6 +403,8 @@ export const DashboardAdmin: React.FC<Props> = ({
             default: return 0;
         }
     };
+
+    const getSelectedUniformItem = () => uniformItems.find(item => item.id === orderForm.item);
 
     // Assignments State
     const [newAssignment, setNewAssignment] = useState<{ title: string, description: string, dueDate: string, studentId: string, file: File | null }>({ title: '', description: '', dueDate: '', studentId: '', file: null });
@@ -2394,6 +2407,7 @@ export const DashboardAdmin: React.FC<Props> = ({
 
     const handleOrderUniform = (e: React.FormEvent) => {
         e.preventDefault();
+        const customItem = getSelectedUniformItem();
         let price = getCurrentPrice();
         let itemName = '';
 
@@ -2401,6 +2415,7 @@ export const DashboardAdmin: React.FC<Props> = ({
         else if (orderForm.item === 'pants_roda') { itemName = 'Calça de Roda'; }
         else if (orderForm.item === 'pants_train') { itemName = 'Calça de Treino'; }
         else if (orderForm.item === 'combo') { itemName = 'Combo'; }
+        else if (customItem) { itemName = customItem.title; }
 
         const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
             user_id: user.id,
@@ -2409,7 +2424,7 @@ export const DashboardAdmin: React.FC<Props> = ({
             date: new Date().toLocaleDateString('pt-BR'),
             item: itemName,
             shirt_size: (orderForm.item === 'shirt' || orderForm.item === 'combo') ? orderForm.shirtSize : undefined,
-            pants_size: (orderForm.item !== 'shirt') ? orderForm.pantsSize : undefined,
+            pants_size: (orderForm.item === 'pants_roda' || orderForm.item === 'pants_train' || orderForm.item === 'combo') ? orderForm.pantsSize : undefined,
             total: price,
             status: 'pending'
         };
@@ -2417,6 +2432,48 @@ export const DashboardAdmin: React.FC<Props> = ({
         onNotifyAdmin(`${user.role === 'admin' ? 'Admin' : 'Professor'} solicitou uniforme: ${itemName}`, user);
         alert('Pedido registrado!');
         setOrderForm({ item: 'combo', shirtSize: '', pantsSize: '' });
+    };
+
+    const handleSubmitUniformItem = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!uniformItemImage) {
+            alert('Adicione uma foto do item.');
+            return;
+        }
+
+        setUploadingUniformItem(true);
+        try {
+            const file = await convertToStandardImage(uniformItemImage);
+            const ext = file.name.split('.').pop() || 'jpg';
+            const filePath = `${user.id}/uniform-items/${Date.now()}.${ext}`;
+            const { error: uploadError } = await supabase.storage.from('materials').upload(filePath, file, { upsert: true });
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = supabase.storage.from('materials').getPublicUrl(filePath);
+            const priceText = uniformItemForm.price.trim().replace(',', '.');
+            const price = priceText ? Number(priceText) : null;
+            if (priceText && Number.isNaN(price)) {
+                alert('Informe um preço válido ou deixe em branco.');
+                return;
+            }
+
+            await onAddUniformItem({
+                title: uniformItemForm.title.trim(),
+                description: uniformItemForm.description.trim(),
+                image_url: publicUrlData.publicUrl,
+                price,
+                created_by: user.id
+            });
+
+            setUniformItemForm({ title: '', description: '', price: '' });
+            setUniformItemImage(null);
+            alert('Item cadastrado com sucesso!');
+        } catch (error: any) {
+            console.error('Erro ao cadastrar item:', error);
+            alert('Erro ao cadastrar item: ' + error.message);
+        } finally {
+            setUploadingUniformItem(false);
+        }
     };
 
     const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -5226,6 +5283,9 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                         <option value="shirt">Blusa Oficial</option>
                                                         <option value="pants_roda">Calça de Roda</option>
                                                         <option value="pants_train">Calça de Treino</option>
+                                                        {uniformItems.map(item => (
+                                                            <option key={item.id} value={item.id}>{item.title}</option>
+                                                        ))}
                                                     </select>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
@@ -5260,7 +5320,9 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                 </div>
                                                 <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-sky-200 mt-2">
                                                     <span className="text-gray-600 text-sm font-bold">Total a pagar:</span>
-                                                    <span className="text-xl font-black text-gray-900">R$ {getCurrentPrice().toFixed(2).replace('.', ',')}</span>
+                                                    <span className="text-xl font-black text-gray-900">
+                                                        {getSelectedUniformItem() ? (getSelectedUniformItem()?.price == null ? 'Sob consulta' : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`) : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`}
+                                                    </span>
                                                 </div>
                                                 <Button fullWidth type="submit" className="h-12 bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20">
                                                     <ShoppingBag size={18} className="mr-2" /> Finalizar Pedido
@@ -5279,7 +5341,7 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                             <div className="flex justify-between items-start">
                                                                 <div>
                                                                     <p className="font-bold text-gray-900">{order.item}</p>
-                                                                    <p className="text-gray-600 text-xs">R$ {order.total.toFixed(2).replace('.', ',')} - {order.date}</p>
+                                                                    <p className="text-gray-600 text-xs">{order.total > 0 ? `R$ ${order.total.toFixed(2).replace('.', ',')}` : 'Sob consulta'} - {order.date}</p>
                                                                 </div>
                                                                 <div className="flex items-center gap-2">
                                                                     {order.status === 'pending' && <span className="px-2 py-1 rounded bg-yellow-900/30 text-yellow-700 text-[10px] font-black uppercase border border-yellow-900/50">Pendente</span>}
@@ -5330,6 +5392,67 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                     ))
                                                 ) : (
                                                     <p className="text-gray-600 text-sm italic py-8 text-center bg-sky-50 rounded-xl border border-dashed border-sky-300">Nenhum pedido registrado.</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="mt-8 grid lg:grid-cols-5 gap-8 border-t border-sky-200 pt-8">
+                                        <div className="lg:col-span-2 bg-sky-50 p-6 rounded-2xl border border-sky-200">
+                                            <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
+                                                <Package className="text-orange-500" /> Cadastrar Item
+                                            </h3>
+                                            <form onSubmit={handleSubmitUniformItem} className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-black text-gray-600 mb-1 tracking-widest">Foto</label>
+                                                    <input type="file" accept="image/*,.heic,.heif" onChange={e => setUniformItemImage(e.target.files?.[0] || null)} className="w-full bg-white border border-sky-300 rounded-xl p-3 text-sm" required />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-black text-gray-600 mb-1 tracking-widest">Título</label>
+                                                    <input type="text" value={uniformItemForm.title} onChange={e => setUniformItemForm({ ...uniformItemForm, title: e.target.value })} placeholder="Ex: Berimbau, Cabaça..." className="w-full bg-white border border-sky-300 rounded-xl p-3 text-gray-900 outline-none focus:border-orange-500" required />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-black text-gray-600 mb-1 tracking-widest">Descrição</label>
+                                                    <textarea value={uniformItemForm.description} onChange={e => setUniformItemForm({ ...uniformItemForm, description: e.target.value })} placeholder="Detalhes do item, tamanho, material..." className="w-full bg-white border border-sky-300 rounded-xl p-3 text-gray-900 outline-none focus:border-orange-500 h-24" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] uppercase font-black text-gray-600 mb-1 tracking-widest">Preço opcional</label>
+                                                    <input type="text" inputMode="decimal" value={uniformItemForm.price} onChange={e => setUniformItemForm({ ...uniformItemForm, price: e.target.value })} placeholder="Deixe em branco para Sob consulta" className="w-full bg-white border border-sky-300 rounded-xl p-3 text-gray-900 outline-none focus:border-orange-500" />
+                                                </div>
+                                                <Button fullWidth type="submit" disabled={uploadingUniformItem} className="h-12 bg-orange-500 hover:bg-orange-600">
+                                                    {uploadingUniformItem ? 'Salvando...' : 'Adicionar Item'}
+                                                </Button>
+                                            </form>
+                                        </div>
+                                        <div className="lg:col-span-3">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                                    <Archive className="text-orange-500" /> Itens Cadastrados
+                                                </h3>
+                                                <span className="text-[10px] font-black bg-sky-100 border border-sky-200 px-3 py-1 rounded-full text-gray-600">{uniformItems.length} ITENS</span>
+                                            </div>
+                                            <div className="grid sm:grid-cols-2 gap-4 max-h-[560px] overflow-y-auto pr-2">
+                                                {uniformItems.length > 0 ? (
+                                                    uniformItems.map(item => (
+                                                        <div key={item.id} className="bg-white rounded-2xl border border-sky-200 overflow-hidden shadow-sm">
+                                                            <img src={item.image_url} alt={item.title} className="w-full h-40 object-cover bg-sky-100" />
+                                                            <div className="p-4">
+                                                                <div className="flex justify-between gap-3">
+                                                                    <div>
+                                                                        <h4 className="font-black text-gray-900">{item.title}</h4>
+                                                                        <p className="text-sm font-bold text-emerald-700">{item.price != null ? `R$ ${Number(item.price).toFixed(2).replace('.', ',')}` : 'Sob consulta'}</p>
+                                                                    </div>
+                                                                    <button type="button" onClick={() => onDeleteUniformItem(item.id)} className="text-gray-500 hover:text-red-600" title="Remover">
+                                                                        <Trash2 size={18} />
+                                                                    </button>
+                                                                </div>
+                                                                {item.description && <p className="text-gray-600 text-sm mt-3 line-clamp-3">{item.description}</p>}
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="sm:col-span-2 py-16 bg-white rounded-2xl border-2 border-dashed border-sky-300 text-center text-gray-600 font-bold">
+                                                        Nenhum item cadastrado ainda.
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
