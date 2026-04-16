@@ -19,6 +19,7 @@
     "react-dom": "^18.2.0",
     "vite-plugin-pwa": "^1.2.0",
     "workbox-build": "^7.4.0",
+    "workbox-precaching": "^7.4.0",
     "workbox-window": "^7.4.0"
   },
   "devDependencies": {
@@ -30,6 +31,6 @@
     "vite": "^6.2.0"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "^4.60.0"
+    "@rollup/rollup-linux-x64-gnu": "^4.60.1"
   }
 }

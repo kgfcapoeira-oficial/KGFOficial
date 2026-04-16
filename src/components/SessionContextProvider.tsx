@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '../integrations/supabase/client';
+import { isSupabaseConfigured, supabase } from '../integrations/supabase/client';
 
 interface SessionContextType {
   session: Session | null;
@@ -17,6 +17,11 @@ export const SessionContextProvider: React.FC<{ children: React.ReactNode }> = (
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setIsLoading(false);
