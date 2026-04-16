@@ -8,7 +8,7 @@ import { DashboardProfessor } from './views/DashboardProfessor';
 import { DashboardAdmin } from './views/DashboardAdmin';
 import { ProfileSetup } from './src/pages/ProfileSetup';
 import { SessionContextProvider, useSession } from './src/components/SessionContextProvider';
-import { supabase } from './src/integrations/supabase/client';
+import { isSupabaseConfigured, supabase } from './src/integrations/supabase/client';
 import { User, GroupEvent, AdminNotification, MusicItem, UniformOrder, UserRole, HomeTraining, SchoolReport, Assignment, PaymentRecord, ClassSession, EventRegistration, StudentGrade, GradeCategory, LessonPlan, EventBanner } from './types';
 import { GlobalChat } from './src/components/GlobalChat';
 import { BannerPopup } from './src/components/BannerPopup';
@@ -1086,6 +1086,21 @@ function AppContent() {
     }
 
     if (currentView === 'login') {
+      if (!isSupabaseConfigured) {
+        return (
+          <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-stone-900">
+            <div className="w-full max-w-md bg-stone-800 rounded-2xl shadow-2xl border border-stone-700 p-8 text-center">
+              <h2 className="text-2xl font-bold text-white mb-3">Supabase não configurado</h2>
+              <p className="text-stone-300 mb-6">
+                Para entrar ou criar conta, configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY nas variáveis de ambiente do Replit.
+              </p>
+              <Button onClick={() => setCurrentView('home')} className="bg-orange-600 hover:bg-orange-500 text-white">
+                Voltar
+              </Button>
+            </div>
+          </div>
+        );
+      }
       return <Auth onLogin={handleLogin} onBack={() => setCurrentView('home')} />;
     }
 

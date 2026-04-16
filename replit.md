@@ -84,3 +84,9 @@ Preferred communication style: Simple, everyday language.
 - `VITE_SUPABASE_URL` - Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `GEMINI_API_KEY` - Referenced in README (AI Studio integration)
+
+## Replit Migration Notes
+
+- The app runs on Replit through the `Start application` workflow using `npm run dev` on port 5000.
+- Vite is configured with `host: '0.0.0.0'` and `allowedHosts: true` so the Replit preview can load the app.
+- Supabase client initialization is guarded so missing Replit environment variables do not crash the preview; authentication shows a configuration message until `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are set.
