@@ -1,13 +1,17 @@
 // DashboardAluno.tsx - Student Dashboard View
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { User, ClassSession, GroupEvent, MusicItem, HomeTraining, UniformOrder, SchoolReport, EventRegistration, PaymentRecord, StudentGrade } from '../types';
-import { FFPoints } from './FFPoints';
+import { APPoints } from './APPoints';
 import { useLanguage } from '../src/i18n/LanguageContext';
 import { Calendar, Award, Music, Video, Instagram, MapPin, Copy, Check, Ticket, Wallet, Info, X, UploadCloud, Clock, AlertTriangle, ArrowLeft, AlertCircle, GraduationCap, FileText, Shirt, ShoppingBag, Camera, Eye, PlayCircle, DollarSign, FileUp, MessageCircle, PlusCircle, Activity, BookOpen, CheckCircle } from 'lucide-react';
 import { Button } from '../components/Button';
 import { supabase } from '../src/integrations/supabase/client';
 import { Logo } from '../components/Logo';
 import heic2any from 'heic2any';
+import { QRCodeSVG } from 'qrcode.react';
+import { generatePixPayload } from '../src/utils/pix';
+
+const pixPayload = generatePixPayload('b6da3596-0aec-41ce-b118-47e4757a24d6', 'Andre Luis Guerreiro Nobrega', 'NOVA IGUACU');
 
 interface Props {
   user: User;
@@ -32,6 +36,7 @@ interface Props {
   onUpdatePaymentRecord: (updatedPayment: PaymentRecord) => Promise<void>;
   studentGrades: StudentGrade[];
   onUpdateOrderWithProof: (orderId: string, proofUrl: string, proofName: string) => Promise<void>;
+  uniformPrices?: Record<string, number>;
 }
 
 /**
@@ -137,20 +142,11 @@ const convertToStandardImage = async (file: File): Promise<File> => {
 };
 
 
-type MainTab = 'overview' | 'finance_resources' | 'grades' | 'assignments' | 'music' | 'home_training' | 'school_report' | 'uniform' | 'ffpoints'; // Main tabs for student dashboard
+type MainTab = 'overview' | 'finance_resources' | 'grades' | 'assignments' | 'music' | 'home_training' | 'school_report' | 'uniform' | 'appoints'; // Main tabs for student dashboard
 
-const UNIFORM_PRICES = {
-  combo: 110.00,
-  shirt: 30.00,
-  pants_roda: 80.00,
-  pants_train: 80.00
-};
 
-const DiscordIcon = ({ size = 20 }: { size?: number }) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size}>
-    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.858-1.297 1.185-1.999a.076.076 0 0 0-.04-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.196.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.33.702.728 1.369 1.185 2c.019.024.05.034.081.02a19.825 19.825 0 0 0 6.007-3.034.076.076 0 0 0 .03-.056c.552-5.18-.894-9.673-3.053-13.66a.066.066 0 0 0-.032-.027ZM8.02 15.33c-1.182 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418Zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418Z" />
-  </svg>
-);
+
+
 
 export const DashboardAluno: React.FC<Props> = ({
   user,
@@ -175,6 +171,7 @@ export const DashboardAluno: React.FC<Props> = ({
   onUpdatePaymentRecord,
   studentGrades,
   onUpdateOrderWithProof,
+  uniformPrices = { shirt: 0, pants_roda: 0, pants_train: 0, combo: 0 }
 }) => {
 
   const { t } = useLanguage();
@@ -240,7 +237,7 @@ export const DashboardAluno: React.FC<Props> = ({
   const myEvaluations = useMemo(() => myRawPayments.filter(p => (p.type === 'evaluation' || p.month.toLowerCase().includes('avalia'))), [myRawPayments]);
   const evalPayment = myEvaluations[0]; // for backward compatibility if needed elsewhere
   const beltColors = useMemo(() => {
-    const b = (user.belt || '').toLowerCase();
+    const b = (user.belt || 'Pagão').toLowerCase();
     const [mainPart, ...rest] = b.split('ponta');
     const pontaPart = rest.join('ponta');
 
@@ -262,11 +259,13 @@ export const DashboardAluno: React.FC<Props> = ({
     };
 
     // Calculate mainColor from belt name - don't use beltColor as initial value
-    let mainColor = '#fff';
+    let mainColor = 'transparent';
     let pontaColor: string | null = null;
 
     // Smooth gradients - colors blend together
-    if (mainPart.includes('verde, amarelo, azul e branco')) {
+    if (mainPart.includes('pagão') || mainPart.trim() === '') {
+      mainColor = 'transparent';
+    } else if (mainPart.includes('verde, amarelo, azul e branco')) {
       mainColor = 'linear-gradient(to bottom, #22c55e, #FDD835, #0033CC, #ffffff)';
     } else if (mainPart.includes('amarelo e azul')) {
       mainColor = 'linear-gradient(to bottom, #FDD835, #0033CC)';
@@ -407,15 +406,15 @@ export const DashboardAluno: React.FC<Props> = ({
   }, [myMonthlyPayments]);
 
   const handleCopyPix = () => {
-    const pixKey = 'soufilhodofogo@gmail.com';
+    const pixKey = 'b6da3596-0aec-41ce-b118-47e4757a24d6';
     navigator.clipboard.writeText(pixKey);
     setPixCopied(true);
-    onNotifyAdmin('Visualizou/Copiou PIX Mensalidade', user);
+    onNotifyAdmin('Visualizou/Copiou PIX Mensalidade (Anjos da Paz)', user);
     setTimeout(() => setPixCopied(false), 2000);
   };
 
   const handleCopyCostPix = () => {
-    const pixKey = 'soufilhodofogo@gmail.com';
+    const pixKey = 'b6da3596-0aec-41ce-b118-47e4757a24d6';
     navigator.clipboard.writeText(pixKey);
     setCostPixCopied(true);
     onNotifyAdmin('Visualizou/Copiou PIX de Custos/Eventos', user);
@@ -467,7 +466,7 @@ export const DashboardAluno: React.FC<Props> = ({
       // Update profile table directly to be safe
       const { error: dbError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ photo_url: publicUrl })
         .eq('id', user.id);
 
       if (dbError) throw dbError;
@@ -683,10 +682,10 @@ export const DashboardAluno: React.FC<Props> = ({
     let itemLabel = '';
 
     switch (orderForm.item) {
-      case 'shirt': itemLabel = t('aluno.uniform.shirt_official'); price = UNIFORM_PRICES.shirt; break;
-      case 'pants_roda': itemLabel = t('aluno.uniform.pants_roda'); price = UNIFORM_PRICES.pants_roda; break;
-      case 'pants_train': itemLabel = t('aluno.uniform.pants_train'); price = UNIFORM_PRICES.pants_train; break;
-      case 'combo': itemLabel = t('aluno.uniform.combo'); price = UNIFORM_PRICES.combo; break;
+      case 'shirt': itemLabel = t('aluno.uniform.shirt_official'); price = uniformPrices.shirt; break;
+      case 'pants_roda': itemLabel = t('aluno.uniform.pants_roda'); price = uniformPrices.pants_roda; break;
+      case 'pants_train': itemLabel = t('aluno.uniform.pants_train'); price = uniformPrices.pants_train; break;
+      case 'combo': itemLabel = t('aluno.uniform.combo'); price = uniformPrices.combo; break;
     }
 
     if (orderForm.item === 'shirt' && !orderForm.shirtSize) { alert(t('aluno.uniform.error_size_shirt')); return; }
@@ -714,10 +713,10 @@ export const DashboardAluno: React.FC<Props> = ({
   // Helper to get current price for display
   const getCurrentPrice = () => {
     switch (orderForm.item) {
-      case 'shirt': return UNIFORM_PRICES.shirt;
-      case 'pants_roda': return UNIFORM_PRICES.pants_roda;
-      case 'pants_train': return UNIFORM_PRICES.pants_train;
-      case 'combo': return UNIFORM_PRICES.combo;
+      case 'shirt': return uniformPrices.shirt;
+      case 'pants_roda': return uniformPrices.pants_roda;
+      case 'pants_train': return uniformPrices.pants_train;
+      case 'combo': return uniformPrices.combo;
       default: return 0;
     }
   };
@@ -981,13 +980,13 @@ export const DashboardAluno: React.FC<Props> = ({
       {/* PENDING VIDEO POPUP */}
       {showPendingVideoPopup && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-stone-800 rounded-2xl border-2 border-red-600 shadow-[0_0_30px_rgba(220,38,38,0.3)] max-w-md w-full p-6 relative">
+          <div className="bg-sky-100 rounded-2xl border-2 border-red-600 shadow-[0_0_30px_rgba(220,38,38,0.3)] max-w-md w-full p-6 relative">
             <div className="flex flex-col items-center text-center">
               <div className="bg-red-900/30 p-4 rounded-full mb-4 animate-pulse">
                 <Video size={48} className="text-red-500" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-2">{t('aluno.training.popup_title')}</h3>
-              <p className="text-stone-300 mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('aluno.training.popup_title')}</h3>
+              <p className="text-gray-600 mb-6">
                 {t('aluno.training.popup_msg')}
               </p>
               <div className="flex flex-col w-full gap-3">
@@ -996,7 +995,7 @@ export const DashboardAluno: React.FC<Props> = ({
                 </Button>
                 <button
                   onClick={() => setShowPendingVideoPopup(false)}
-                  className="text-stone-500 hover:text-white text-sm py-2 transition-colors"
+                  className="text-gray-600 hover:text-gray-900 text-sm py-2 transition-colors"
                 >
                   {t('aluno.training.later')}
                 </button>
@@ -1009,40 +1008,40 @@ export const DashboardAluno: React.FC<Props> = ({
       {/* EVENT REGISTRATION MODAL (Mantido) */}
       {showEventRegisterModal && selectedEventToRegister && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-          <div className="bg-stone-800 rounded-2xl border border-stone-600 shadow-2xl max-w-md w-full p-6 relative">
-            <button onClick={() => setShowEventRegisterModal(false)} className="absolute top-4 right-4 text-stone-400 hover:text-white"><X size={20} /></button>
-            <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <div className="bg-sky-100 rounded-2xl border border-sky-300 shadow-2xl max-w-md w-full p-6 relative">
+            <button onClick={() => setShowEventRegisterModal(false)} className="absolute top-4 right-4 text-gray-600 hover:text-gray-900"><X size={20} /></button>
+            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               <Ticket className="text-purple-500" />
               {t('events.register')}
             </h3>
             <form onSubmit={handleRegisterForEvent} className="space-y-4">
               <div>
-                <label className="block text-sm text-stone-400 mb-1">{t('events.field.title')}</label>
+                <label className="block text-sm text-gray-600 mb-1">{t('events.field.title')}</label>
                 <input
                   type="text"
                   value={selectedEventToRegister.title}
-                  className="w-full bg-stone-900 border border-stone-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-white border border-sky-300 rounded px-3 py-2 text-gray-900"
                   disabled
                 />
               </div>
               <div>
-                <label className="block text-sm text-stone-400 mb-1">{t('common.date')}</label>
+                <label className="block text-sm text-gray-600 mb-1">{t('common.date')}</label>
                 <input
                   type="text"
                   value={selectedEventToRegister.date}
-                  className="w-full bg-stone-900 border border-stone-600 rounded px-3 py-2 text-white"
+                  className="w-full bg-white border border-sky-300 rounded px-3 py-2 text-gray-900"
                   disabled
                 />
               </div>
               <div>
-                <label className="block text-sm text-stone-400 mb-1">{t('common.value')}</label>
+                <label className="block text-sm text-gray-600 mb-1">{t('common.value')}</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-stone-400">R$</span>
+                  <span className="absolute left-3 top-2.5 text-gray-600">R$</span>
                   <input
                     type="number"
                     value={eventRegistrationAmount}
                     onChange={(e) => setEventRegistrationAmount(e.target.value)}
-                    className="w-full bg-stone-900 border border-stone-600 rounded pl-10 pr-3 py-2 text-white"
+                    className="w-full bg-white border border-sky-300 rounded pl-10 pr-3 py-2 text-gray-900"
                     min="0"
                     step="0.01"
                     required
@@ -1050,11 +1049,11 @@ export const DashboardAluno: React.FC<Props> = ({
                   />
                 </div>
                 {selectedEventToRegister.price === 0 && (
-                  <p className="text-xs text-stone-500 mt-1">{t('events.free_msg') || 'Este evento é gratuito.'}</p>
+                  <p className="text-xs text-gray-600 mt-1">{t('events.free_msg') || 'Este evento é gratuito.'}</p>
                 )}
               </div>
-              <div className="pt-4 flex justify-end gap-2 border-t border-stone-700 mt-4">
-                <button type="button" onClick={() => setShowEventRegisterModal(false)} className="px-4 py-2 text-stone-400 hover:text-white">{t('common.cancel')}</button>
+              <div className="pt-4 flex justify-end gap-2 border-t border-sky-300 mt-4">
+                <button type="button" onClick={() => setShowEventRegisterModal(false)} className="px-4 py-2 text-gray-600 hover:text-gray-900">{t('common.cancel')}</button>
                 <Button type="submit">
                   <Ticket size={18} /> {t('common.confirm')}
                 </Button>
@@ -1070,11 +1069,11 @@ export const DashboardAluno: React.FC<Props> = ({
 
         {/* Profile Card */}
         <div className="w-full md:w-1/3 space-y-4">
-          <div className="bg-stone-800 rounded-xl p-6 border border-stone-700 shadow-xl">
+          <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 shadow-xl">
             <div className="flex flex-col items-center text-center">
               {/* Profile Image with Upload */}
               <div className="relative group cursor-pointer mb-4" onClick={() => !uploadingPhoto && photoInputRef.current?.click()} title="Clique para alterar a foto">
-                <div className="w-24 h-24 rounded-full bg-stone-700 flex items-center justify-center border-4 border-orange-600 overflow-hidden relative">
+                <div className="w-24 h-24 rounded-full bg-sky-200 flex items-center justify-center border-4 border-white/40 overflow-hidden relative shadow-lg">
                   {user.photo_url ? (
                     <img src={user.photo_url} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
@@ -1082,10 +1081,10 @@ export const DashboardAluno: React.FC<Props> = ({
                   )}
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                    <Camera className="text-white" size={24} />
+                    <Camera className="text-gray-900" size={24} />
                   </div>
                 </div>
-                {uploadingPhoto && <div className="absolute inset-0 flex items-center justify-center rounded-full"><div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin"></div></div>}
+                {uploadingPhoto && <div className="absolute inset-0 flex items-center justify-center rounded-full"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>}
               </div>
               <input
                 type="file"
@@ -1096,25 +1095,25 @@ export const DashboardAluno: React.FC<Props> = ({
                 disabled={uploadingPhoto}
               />
 
-              <h2 className="text-2xl font-bold text-white">{user.nickname || user.name}</h2>
-              {user.nickname && <p className="text-stone-400 text-sm">{user.name}</p>}
-              <p className="text-stone-500 text-xs mb-4">{user.email}</p>
+              <h2 className="text-2xl font-bold text-gray-900">{user.nickname || user.name}</h2>
+              {user.nickname && <p className="text-gray-600 text-sm">{user.name}</p>}
+              <p className="text-gray-600 text-xs mb-4">{user.email}</p>
 
-              <div className="bg-stone-800 rounded-xl p-6 border border-stone-700 flex flex-col items-center justify-center space-y-4 mb-6">
-                <div className="w-full max-w-sm bg-stone-900 rounded-lg p-6 border-l-4 overflow-hidden relative flex flex-col items-center text-center">
+              <div className="bg-sky-200 rounded-xl p-6 border border-sky-300 flex flex-col items-center justify-center space-y-4 mb-6">
+                <div className="w-full max-w-sm bg-white rounded-lg p-6 overflow-hidden relative flex flex-col items-center text-center">
                   <div className="absolute left-0 top-0 bottom-0 w-2" style={{ background: beltColors.mainColor }}></div>
                   {beltColors.pontaColor && (
-                    <div className="absolute left-0 bottom-0 w-2 h-3 rounded-b" style={{ background: beltColors.pontaColor }}></div>
+                    <div className="absolute left-0 bottom-0 w-2 h-1/3" style={{ background: beltColors.pontaColor }}></div>
                   )}
-                  <p className="text-xs text-stone-500 uppercase tracking-wider mb-2">Graduação Atual</p>
-                  <p className="text-2xl font-bold text-white flex items-center justify-center gap-2">
+                  <p className="text-xs text-gray-600 uppercase tracking-wider mb-2">Graduação Atual</p>
+                  <p className="text-2xl font-bold text-gray-900 flex items-center justify-center gap-2">
                     <Award className="text-orange-500" size={24} />
-                    {user.belt || 'Cordel Cinza'}
+                    {user.belt || 'Pagão'}
                   </p>
                 </div>
 
                 <div className="w-full max-w-sm bg-green-900/20 rounded-lg p-6 border border-green-900/50 flex flex-col items-center text-center">
-                  <p className="text-xs text-green-400 uppercase tracking-wider font-bold mb-2 flex items-center gap-1">
+                  <p className="text-xs text-green-700 uppercase tracking-wider font-bold mb-2 flex items-center gap-1">
                     <GraduationCap size={16} /> Próxima Avaliação
                   </p>
                   <div className="flex flex-col items-center gap-2">
@@ -1132,14 +1131,14 @@ export const DashboardAluno: React.FC<Props> = ({
                         <>
                           {remainingValue > 0 ? (
                             <>
-                              <p className="text-sm text-stone-400">Valor Restante Parcelas:</p>
-                              <p className="text-2xl font-bold text-white">R$ {remainingValue.toFixed(2).replace('.', ',')}</p>
+                              <p className="text-sm text-gray-600">Valor Restante Parcelas:</p>
+                              <p className="text-2xl font-bold text-gray-900">R$ {remainingValue.toFixed(2).replace('.', ',')}</p>
                               <div className="flex gap-2 text-xs">
-                                <span className="text-green-400">{paidInstallments.length} pagas</span>
-                                <span className="text-stone-600">|</span>
-                                <span className="text-orange-400">{pendingInstallments.length} pendentes</span>
+                                <span className="text-green-700">{paidInstallments.length} pagas</span>
+                                <span className="text-gray-600">|</span>
+                                <span className="text-orange-600">{pendingInstallments.length} pendentes</span>
                               </div>
-                              <div className="w-full bg-stone-700 rounded-full h-2 mt-2">
+                              <div className="w-full bg-sky-200 rounded-full h-2 mt-2">
                                 <div
                                   className="bg-green-500 h-2 rounded-full transition-all"
                                   style={{ width: `${userInstallments.length > 0 ? (paidInstallments.length / userInstallments.length) * 100 : 0}%` }}
@@ -1148,9 +1147,9 @@ export const DashboardAluno: React.FC<Props> = ({
                             </>
                           ) : (
                             <>
-                              <p className="text-2xl font-bold text-white">R$ {Number(user.graduationCost || 0).toFixed(2).replace('.', ',')}</p>
+                              <p className="text-2xl font-bold text-gray-900">R$ {Number(user.graduationCost || 0).toFixed(2).replace('.', ',')}</p>
                               {totalPaid > 0 && (
-                                <span className="text-xs text-green-400">✓ Parcelas quitadas</span>
+                                <span className="text-xs text-green-700">✓ Parcelas quitadas</span>
                               )}
                             </>
                           )}
@@ -1159,14 +1158,14 @@ export const DashboardAluno: React.FC<Props> = ({
                     })()}
 
                     {user.nextEvaluationDate && (
-                      <span className="text-sm text-stone-400 bg-stone-900/50 px-3 py-1 rounded-full mt-2">
-                        Data: <span className="text-green-400">{user.nextEvaluationDate.split('-').reverse().join('/')}</span>
+                      <span className="text-sm text-gray-600 bg-sky-50/50 px-3 py-1 rounded-full mt-2">
+                        Data: <span className="text-green-700">{user.nextEvaluationDate.split('-').reverse().join('/')}</span>
                       </span>
                     )}
                     {(user.graduationCost ?? 0) === 0 ? (
-                      <p className="text-[10px] text-stone-400 mt-1">Custo definido pela coordenação (Gratuito)</p>
+                      <p className="text-[10px] text-gray-600 mt-1">Custo definido pela coordenação (Gratuito)</p>
                     ) : (
-                      <p className="text-[10px] text-stone-400 mt-1">Valor definido pela coordenação</p>
+                      <p className="text-[10px] text-gray-600 mt-1">Valor definido pela coordenação</p>
                     )}
                   </div>
                 </div>
@@ -1175,19 +1174,19 @@ export const DashboardAluno: React.FC<Props> = ({
 
               {user.professorName && (
                 <div className="mb-4">
-                  <p className="text-xs text-stone-500 uppercase tracking-wider">Professor</p>
-                  <p className="text-white font-semibold">{user.professorName}</p>
+                  <p className="text-xs text-gray-600 uppercase tracking-wider">Professor</p>
+                  <p className="text-gray-900 font-semibold">{user.professorName}</p>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-2 w-full">
-                <div className="bg-stone-900 p-3 rounded-lg">
-                  <p className="text-2xl font-bold text-white">{myClasses.length}</p> {/* Updated to myClasses.length */}
-                  <p className="text-xs text-stone-500">Aulas no Mês</p>
+                <div className="bg-white p-3 rounded-lg">
+                  <p className="text-2xl font-bold text-gray-900">{myClasses.length}</p> {/* Updated to myClasses.length */}
+                  <p className="text-xs text-gray-600">Aulas no Mês</p>
                 </div>
-                <div className="bg-stone-900 p-3 rounded-lg">
-                  <p className="2xl font-bold text-white">{events.length}</p>
-                  <p className="text-xs text-stone-500">Eventos</p>
+                <div className="bg-white p-3 rounded-lg">
+                  <p className="2xl font-bold text-gray-900">{events.length}</p>
+                  <p className="text-xs text-gray-600">Eventos</p>
                 </div>
               </div>
             </div>
@@ -1205,74 +1204,64 @@ export const DashboardAluno: React.FC<Props> = ({
             </Button>
           </a>
 
-          <a
-            href="https://discord.gg/AY2kk9Ubk"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-          >
-            <Button fullWidth className="mb-4 text-white border-none !bg-[#5865F2] hover:!bg-[#4752C4]" onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#4752C4'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#5865F2'}>
-              <DiscordIcon size={20} />
-              Discord
-            </Button>
-          </a>
+
         </div>
 
         {/* Schedule & Content */}
         <div className="w-full md:w-2/3 space-y-6">
           {/* Tabs Navigation */}
-          <div className="tabs-scroll border-b border-stone-700 pb-1">
+          <div className="tabs-scroll border-b border-sky-300 pb-1">
             <button
               onClick={() => setActiveMainTab('overview')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'overview' ? 'bg-stone-800 text-orange-500 border-t-2 border-orange-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'overview' ? 'bg-sky-100 text-orange-500 border-t-2 border-orange-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.overview')}
             </button>
             <button
               onClick={() => setActiveMainTab('finance_resources')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'finance_resources' ? 'bg-stone-800 text-green-500 border-t-2 border-green-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'finance_resources' ? 'bg-sky-100 text-green-500 border-t-2 border-green-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.finance')}
             </button>
             <button
               onClick={() => setActiveMainTab('assignments')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'assignments' ? 'bg-stone-800 text-cyan-500 border-t-2 border-cyan-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'assignments' ? 'bg-sky-100 text-cyan-500 border-t-2 border-cyan-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.assignments')}
             </button>
             <button
               onClick={() => setActiveMainTab('music')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'music' ? 'bg-stone-800 text-yellow-500 border-t-2 border-yellow-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'music' ? 'bg-sky-100 text-yellow-500 border-t-2 border-yellow-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.music')}
             </button>
             <button
               onClick={() => setActiveMainTab('home_training')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'home_training' ? 'bg-stone-800 text-purple-500 border-t-2 border-purple-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'home_training' ? 'bg-sky-100 text-purple-500 border-t-2 border-purple-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.training')}
             </button>
             <button
               onClick={() => setActiveMainTab('school_report')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'school_report' ? 'bg-stone-800 text-indigo-500 border-t-2 border-indigo-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'school_report' ? 'bg-sky-100 text-indigo-500 border-t-2 border-indigo-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.report')}
             </button>
             <button
               onClick={() => setActiveMainTab('uniform')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'uniform' ? 'bg-stone-800 text-emerald-500 border-t-2 border-emerald-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'uniform' ? 'bg-sky-100 text-emerald-500 border-t-2 border-emerald-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.uniform')}
             </button>
             <button
               onClick={() => setActiveMainTab('grades')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'grades' ? 'bg-stone-800 text-blue-500 border-t-2 border-blue-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap ${activeMainTab === 'grades' ? 'bg-sky-100 text-blue-500 border-t-2 border-blue-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.grades')}
             </button>
             <button
-              onClick={() => setActiveMainTab('ffpoints')}
-              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap flex items-center gap-1 ${activeMainTab === 'ffpoints' ? 'bg-stone-800 text-yellow-500 border-t-2 border-yellow-500' : 'text-stone-400 hover:text-white hover:bg-stone-800'}`}
+              onClick={() => setActiveMainTab('appoints')}
+              className={`px-3 py-2 rounded-t-lg font-medium transition-colors text-sm whitespace-nowrap flex items-center gap-1 ${activeMainTab === 'appoints' ? 'bg-sky-100 text-blue-500 border-t-2 border-blue-500' : 'text-gray-600 hover:text-gray-900 hover:bg-sky-100'}`}
             >
               {t('aluno.tab.ffpoints')}
             </button>
@@ -1281,8 +1270,8 @@ export const DashboardAluno: React.FC<Props> = ({
           {/* OVERDUE ALERT FOR ADULT STUDENTS */}
           {isOver18 && overdueStatus.isOverdue && (
             <div className={`p-4 rounded-xl border mb-6 flex items-center gap-4 animate-pulse-subtle shadow-lg ${overdueStatus.color === 'red' ? 'bg-red-900/30 border-red-500 text-red-500 shadow-red-900/20' :
-              overdueStatus.color === 'orange' ? 'bg-orange-900/30 border-orange-500 text-orange-400 shadow-orange-900/20' :
-                'bg-yellow-900/30 border-yellow-500 text-yellow-400 shadow-yellow-900/20'
+              overdueStatus.color === 'orange' ? 'bg-orange-900/30 border-orange-500 text-orange-600 shadow-orange-900/20' :
+                'bg-yellow-900/30 border-yellow-500 text-yellow-700 shadow-yellow-900/20'
               }`}>
               <div className={`p-2 rounded-lg ${overdueStatus.color === 'red' ? 'bg-red-500/20' : overdueStatus.color === 'orange' ? 'bg-orange-500/20' : 'bg-yellow-500/20'}`}>
                 <AlertTriangle size={24} />
@@ -1300,8 +1289,8 @@ export const DashboardAluno: React.FC<Props> = ({
           {activeMainTab === 'overview' && (
             <div className="space-y-6 animate-fade-in">
               {/* Resumo de Atividades (Summary) */}
-              <div className="bg-stone-800 rounded-xl p-6 border border-stone-700 shadow-xl">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 shadow-xl">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Activity className="text-cyan-500" />
                   {t('aluno.overview.title')}
                 </h3>
@@ -1309,101 +1298,101 @@ export const DashboardAluno: React.FC<Props> = ({
                   {/* Pending Assignments */}
                   <div
                     onClick={() => setActiveMainTab('assignments')}
-                    className="bg-stone-900/50 p-4 rounded-xl border border-stone-700 hover:border-cyan-500/50 transition-all cursor-pointer group"
+                    className="bg-sky-50/50 p-4 rounded-xl border border-sky-300 hover:border-cyan-500/50 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-cyan-500/10 rounded-lg text-cyan-500">
                         <BookOpen size={20} />
                       </div>
-                      <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">{t('assignments.title')}</span>
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">{t('assignments.title')}</span>
                     </div>
-                    <p className="text-2xl font-black text-white">
+                    <p className="text-2xl font-black text-gray-900">
                       {myAssignments.filter(a => a.status === 'pending').length}
                     </p>
-                    <p className="text-[10px] text-stone-500 mt-1">{t('aluno.overview.assignments_pending')}</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{t('aluno.overview.assignments_pending')}</p>
                   </div>
 
                   {/* Home Training Status */}
                   <div
                     onClick={() => setActiveMainTab('home_training')}
-                    className="bg-stone-900/50 p-4 rounded-xl border border-stone-700 hover:border-purple-500/50 transition-all cursor-pointer group"
+                    className="bg-sky-50/50 p-4 rounded-xl border border-sky-300 hover:border-purple-500/50 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
                         <Video size={20} />
                       </div>
-                      <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">{t('training.title')}</span>
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">{t('training.title')}</span>
                     </div>
-                    <p className="text-sm font-bold text-white">
+                    <p className="text-sm font-bold text-gray-900">
                       {myHomeTrainings.length > 0 ? (
-                        <span className="text-green-400 flex items-center gap-1"><Check size={14} /> {t('status.ready')}</span>
+                        <span className="text-green-700 flex items-center gap-1"><Check size={14} /> {t('status.ready')}</span>
                       ) : (
-                        <span className="text-yellow-400 flex items-center gap-1"><AlertCircle size={14} /> {t('status.pending')}</span>
+                        <span className="text-yellow-700 flex items-center gap-1"><AlertCircle size={14} /> {t('status.pending')}</span>
                       )}
                     </p>
-                    <p className="text-[10px] text-stone-500 mt-1">{t('aluno.overview.training_today')}</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{t('aluno.overview.training_today')}</p>
                   </div>
 
                   {/* Next Evaluate status */}
                   <div
                     onClick={() => setActiveMainTab('grades')}
-                    className="bg-stone-900/50 p-4 rounded-xl border border-stone-700 hover:border-orange-500/50 transition-all cursor-pointer group"
+                    className="bg-sky-50/50 p-4 rounded-xl border border-sky-300 hover:border-orange-500/50 transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-3 mb-2">
                       <div className="p-2 bg-orange-500/10 rounded-lg text-orange-500">
                         <Award size={20} />
                       </div>
-                      <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">{t('grades.evaluate')}</span>
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">{t('grades.evaluate')}</span>
                     </div>
-                    <p className="text-sm font-bold text-white">
+                    <p className="text-sm font-bold text-gray-900">
                       {user.nextEvaluationDate ? new Date(user.nextEvaluationDate).toLocaleDateString('pt-BR') : t('aluno.overview.to_be_defined')}
                     </p>
-                    <p className="text-[10px] text-stone-500 mt-1">{t('aluno.overview.eval_date')}</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{t('aluno.overview.eval_date')}</p>
                   </div>
                 </div>
               </div>
 
 
               {/* Suas Próximas Aulas (Specific Professor) */}
-              <div className="bg-stone-800 rounded-xl p-6 border-2 border-orange-600/50 shadow-[0_0_15px_rgba(234,88,12,0.1)]">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="bg-sky-100 rounded-xl p-6 border-2 border-orange-600/50 shadow-[0_0_15px_rgba(234,88,12,0.1)]">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Calendar className="text-orange-500" />
                   {t('aluno.overview.classes')}
                 </h3>
                 <div className="space-y-3">
                   {myClasses.length > 0 ? (
                     myClasses.map((session) => (
-                      <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-stone-900/50 p-4 rounded-lg border-l-4 border-orange-500 relative overflow-hidden">
+                      <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-sky-50/50 p-4 rounded-lg border-l-4 border-orange-500 relative overflow-hidden">
                         <div>
-                          {session.title && <p className="text-white font-bold text-base mb-0.5">{session.title}</p>}
-                          <p className="text-orange-400 font-bold text-lg">{session.date} • {session.time}</p>
+                          {session.title && <p className="text-gray-900 font-bold text-base mb-0.5">{session.title}</p>}
+                          <p className="text-orange-600 font-bold text-lg">{session.date} • {session.time}</p>
                           {session.category && (
-                            <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-orange-900/30 text-orange-400 border border-orange-900/50 px-2 py-0.5 rounded-full mr-2 mb-1">
+                            <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-orange-900/30 text-orange-600 border border-orange-900/50 px-2 py-0.5 rounded-full mr-2 mb-1">
                               {session.category}
                             </span>
                           )}
-                          <p className="text-sm text-stone-400">{session.location} - {session.instructor}</p>
+                          <p className="text-sm text-gray-600">{session.location} - {session.instructor}</p>
                         </div>
                         <div className="mt-3 sm:mt-0">
-                          <span className="bg-red-900/40 text-red-400 border border-red-900/50 px-3 py-1 rounded text-xs font-bold flex items-center gap-1">
+                          <span className="bg-red-900/40 text-red-600 border border-red-900/50 px-3 py-1 rounded text-xs font-bold flex items-center gap-1">
                             <AlertCircle size={12} /> {t('common.required')}
                           </span>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <p className="text-stone-500 italic">{t('aluno.overview.classes_empty')}</p>
+                    <p className="text-gray-600 italic">{t('aluno.overview.classes_empty')}</p>
                   )}
                 </div>
               </div>
 
               {/* Próximas Aulas do Grupo (Other Professors) */}
-              <div className="bg-stone-800 rounded-xl p-6 border border-stone-700">
-                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                  <Calendar className="text-stone-500" />
+              <div className="bg-sky-100 rounded-xl p-6 border border-sky-300">
+                <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
+                  <Calendar className="text-gray-600" />
                   {t('aluno.overview.classes_group')}
                 </h3>
-                <p className="text-xs text-stone-400 mb-4 bg-stone-900/50 p-2 rounded border border-stone-600 inline-block">
+                <p className="text-xs text-gray-600 mb-4 bg-sky-50/50 p-2 rounded border border-sky-300 inline-block">
                   {t('aluno.overview.classes_group_desc')}
                 </p>
                 <div className="space-y-3">
@@ -1414,19 +1403,19 @@ export const DashboardAluno: React.FC<Props> = ({
                       const professorDisplayName = sessionProfessor?.nickname || sessionProfessor?.name || session.instructor;
 
                       return (
-                        <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-stone-900/30 p-4 rounded-lg border-l-2 border-stone-600 opacity-80 hover:opacity-100 transition-opacity">
+                        <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/30 p-4 rounded-lg border-l-2 border-sky-300 opacity-80 hover:opacity-100 transition-opacity">
                           <div>
-                            {session.title && <p className="text-stone-200 font-bold text-base mb-0.5">{session.title}</p>}
-                            <p className="text-stone-300 font-semibold">{session.date} • {session.time}</p>
+                            {session.title && <p className="text-gray-700 font-bold text-base mb-0.5">{session.title}</p>}
+                            <p className="text-gray-600 font-semibold">{session.date} • {session.time}</p>
                             {session.category && (
-                              <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-stone-800 text-stone-400 border border-stone-700 px-2 py-0.5 rounded-full mr-2 mb-1">
+                              <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-sky-100 text-gray-600 border border-sky-300 px-2 py-0.5 rounded-full mr-2 mb-1">
                                 {session.category}
                               </span>
                             )}
-                            <p className="text-xs text-stone-500">{session.location} - {professorDisplayName}</p>
+                            <p className="text-xs text-gray-600">{session.location} - {professorDisplayName}</p>
                           </div>
                           <div className="mt-2 sm:mt-0">
-                            <span className="text-stone-500 text-xs font-bold border border-stone-700 px-2 py-1 rounded">
+                            <span className="text-gray-600 text-xs font-bold border border-sky-300 px-2 py-1 rounded">
                               {t('common.optional')}
                             </span>
                           </div>
@@ -1434,18 +1423,18 @@ export const DashboardAluno: React.FC<Props> = ({
                       );
                     })
                   ) : (
-                    <p className="text-stone-500 italic">Nenhuma outra aula do grupo agendada.</p>
+                    <p className="text-gray-600 italic">Nenhuma outra aula do grupo agendada.</p>
                   )}
                 </div>
               </div>
 
               {/* Mural de Eventos */}
-              <div className="bg-stone-800 rounded-xl p-6 border border-stone-700">
-                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+              <div className="bg-sky-100 rounded-xl p-6 border border-sky-300">
+                <h3 className="text-xl font-bold text-gray-900 mb-2 flex items-center gap-2">
                   <MapPin className="text-orange-500" />
                   Mural de Eventos
                 </h3>
-                <p className="text-xs text-red-400 mb-4 bg-red-900/20 p-2 rounded border border-red-900/50 inline-flex items-center gap-1">
+                <p className="text-xs text-red-600 mb-4 bg-red-900/20 p-2 rounded border border-red-900/50 inline-flex items-center gap-1">
                   <AlertCircle size={12} /> Todos os eventos são de participação obrigatória.
                 </p>
                 <div className="space-y-3">
@@ -1456,22 +1445,22 @@ export const DashboardAluno: React.FC<Props> = ({
                       const displayDesc = timeMatch ? event.description.replace(/^\[Horário:\s*(.*?)\]\n?/, '') : event.description;
 
                       return (
-                        <div key={event.id} className="flex flex-col p-4 bg-stone-900/50 rounded-lg border-l-4 border-red-500">
+                        <div key={event.id} className="flex flex-col p-4 bg-sky-50/50 rounded-lg border-l-4 border-red-500">
                           <div className="flex justify-between items-start">
                             <div>
-                              <h4 className="text-white font-bold text-lg">{event.title}</h4>
-                              <p className="text-stone-400 text-sm mt-1">{displayDesc}</p>
+                              <h4 className="text-gray-900 font-bold text-lg">{event.title}</h4>
+                              <p className="text-gray-600 text-sm mt-1">{displayDesc}</p>
                             </div>
                             <div className="flex flex-col items-end gap-2">
-                              <span className="bg-stone-800 text-orange-400 px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
-                                {event.date.split('-').reverse().join('/')} {displayTime && <span className="text-stone-400 ml-1">às {displayTime}</span>}
+                              <span className="bg-sky-100 text-orange-600 px-2 py-1 rounded text-xs font-bold whitespace-nowrap">
+                                {event.date.split('-').reverse().join('/')} {displayTime && <span className="text-gray-600 ml-1">às {displayTime}</span>}
                               </span>
                               {event.price && event.price > 0 && (
-                                <span className="flex items-center gap-1 text-green-400 bg-green-900/20 px-2 py-1 rounded text-xs font-bold border border-green-900/50">
+                                <span className="flex items-center gap-1 text-green-700 bg-green-900/20 px-2 py-1 rounded text-xs font-bold border border-green-900/50">
                                   <DollarSign size={12} /> R$ {event.price.toFixed(2).replace('.', ',')}
                                 </span>
                               )}
-                              <span className="bg-red-900/40 text-red-400 border border-red-900/50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
+                              <span className="bg-red-900/40 text-red-600 border border-red-900/50 px-2 py-1 rounded text-xs font-bold flex items-center gap-1">
                                 <AlertCircle size={12} /> Obrigatório
                               </span>
                             </div>
@@ -1480,7 +1469,7 @@ export const DashboardAluno: React.FC<Props> = ({
                       );
                     })
                   ) : (
-                    <p className="text-stone-500 italic">Nenhum evento programado.</p>
+                    <p className="text-gray-600 italic">Nenhum evento programado.</p>
                   )}
                 </div>
               </div>
@@ -1490,7 +1479,7 @@ export const DashboardAluno: React.FC<Props> = ({
           {/* --- TAB: FINANCEIRO --- */}
           {activeMainTab === 'finance_resources' && (
             <div className="space-y-6 animate-fade-in">
-              <Button variant="ghost" className="mb-2 text-stone-400 p-0 hover:text-white" onClick={() => setActiveMainTab('overview')}>
+              <Button variant="ghost" className="mb-2 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
                 <ArrowLeft size={16} className="mr-2" />
                 Voltar ao Painel
               </Button>
@@ -1498,41 +1487,44 @@ export const DashboardAluno: React.FC<Props> = ({
               <div className="grid lg:grid-cols-2 gap-8">
                 {/* Mensalidades Card */}
                 <div className="space-y-6">
-                  <div className="bg-stone-900/50 p-6 rounded-2xl border border-stone-700 shadow-xl">
-                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                  <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-300 shadow-xl">
+                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <Wallet className="text-orange-500" />
                       {t('aluno.finance.title')}
                     </h3>
 
-                    <div className="mb-6 space-y-3">
+                    <div className="mb-6 space-y-3 flex flex-col items-center">
+                      <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
+                        <QRCodeSVG value={pixPayload} size={160} />
+                      </div>
                       <Button
-                        fullWidth
-                        variant="outline"
+                        variant="ghost"
+                        size="sm"
                         onClick={handleCopyPix}
-                        className={`h-12 border-2 transition-all ${pixCopied ? "border-green-500 text-green-500 bg-green-500/5" : "border-orange-500/30 text-orange-400 hover:border-orange-500 hover:bg-orange-500/5"}`}
+                        className={`text-[10px] transition-all h-8 ${pixCopied ? "text-green-600 bg-green-500/10" : "text-gray-500 hover:text-orange-600 hover:bg-orange-500/10"}`}
                       >
-                        {pixCopied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
-                        {pixCopied ? t('aluno.finance.pix_copied') : t('aluno.finance.copy_pix')}
+                        {pixCopied ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
+                        {pixCopied ? t('aluno.finance.pix_copied') : 'Copiar Código PIX'}
                       </Button>
-                      <p className="text-[10px] text-stone-500 text-center font-bold tracking-widest uppercase">{t('aluno.finance.key')}</p>
+                      <p className="text-[10px] text-gray-400 text-center font-bold tracking-widest uppercase">{t('aluno.finance.key')}</p>
                     </div>
 
                     <div className="space-y-3">
                       {myMonthlyPayments.length > 0 ? (
                         myMonthlyPayments.map(payment => (
-                          <div key={payment.id} className={`bg-stone-900 p-4 rounded-xl border-l-4 ${payment.status === 'paid' ? 'border-green-500' : 'border-yellow-500'} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-md`}>
+                          <div key={payment.id} className={`bg-white p-4 rounded-xl border-l-4 ${payment.status === 'paid' ? 'border-green-500' : 'border-yellow-500'} flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-md`}>
                             <div>
-                              <p className="font-bold text-white text-sm uppercase tracking-tight">{payment.month}</p>
-                              <p className="text-stone-500 text-xs font-mono">R$ {payment.amount?.toFixed(2).replace('.', ',')} • {t('aluno.finance.due_date')} {payment.due_date?.split('-').reverse().join('/')}</p>
+                              <p className="font-bold text-gray-900 text-sm uppercase tracking-tight">{payment.month}</p>
+                              <p className="text-gray-600 text-xs font-mono">R$ {payment.amount?.toFixed(2).replace('.', ',')} • {t('aluno.finance.due_date')} {payment.due_date?.split('-').reverse().join('/')}</p>
                             </div>
                             <div className="flex items-center gap-2">
                               {payment.status === 'paid' ? (
-                                <span className="bg-green-500/10 text-green-400 text-[10px] font-black px-2 py-1 rounded border border-green-500/20 uppercase">{t('aluno.finance.paid')}</span>
+                                <span className="bg-green-500/10 text-green-700 text-[10px] font-black px-2 py-1 rounded border border-green-500/20 uppercase">{t('aluno.finance.paid')}</span>
                               ) : (
                                 <>
                                   <Button
                                     variant="secondary"
-                                    className="text-[10px] h-auto px-2 py-1 bg-stone-800 border-stone-700"
+                                    className="text-[10px] h-auto px-2 py-1 bg-sky-100 border-sky-300"
                                     onClick={() => {
                                       setSelectedPaymentToProof(payment);
                                       // Small delay to ensure state is set before click (fixes mobile PWA issue)
@@ -1556,7 +1548,7 @@ export const DashboardAluno: React.FC<Props> = ({
                               {payment.proof_url && (
                                 <button
                                   onClick={() => handleViewPaymentProof(payment.proof_url!, payment.proof_name || t('aluno.finance.view_proof'), 'payment_proofs')}
-                                  className="text-blue-400 hover:text-blue-300 text-xs p-1 rounded hover:bg-blue-400/5 transition-all"
+                                  className="text-blue-700 hover:text-blue-600 text-xs p-1 rounded hover:bg-blue-400/5 transition-all"
                                   title={t('aluno.finance.view_proof')}
                                 >
                                   <Eye size={18} />
@@ -1566,7 +1558,7 @@ export const DashboardAluno: React.FC<Props> = ({
                           </div>
                         ))
                       ) : (
-                        <p className="text-stone-500 text-sm italic text-center py-6 bg-stone-800/50 rounded-xl border border-dashed border-stone-700">{t('aluno.finance.empty')}</p>
+                        <p className="text-gray-600 text-sm italic text-center py-6 bg-sky-100/50 rounded-xl border border-dashed border-sky-300">{t('aluno.finance.empty')}</p>
                       )}
                     </div>
                   </div>
@@ -1574,33 +1566,38 @@ export const DashboardAluno: React.FC<Props> = ({
 
                 {/* Eventos e Avaliações Card */}
                 <div className="space-y-6">
-                  <div className="bg-stone-900/50 p-6 rounded-2xl border border-stone-700 shadow-xl">
-                    <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                  <div className="bg-sky-50/50 p-6 rounded-2xl border border-sky-300 shadow-xl">
+                    <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                       <DollarSign className="text-yellow-500" />
                       {t('aluno.finance.other_payments')}
                     </h3>
 
-                    <Button
-                      fullWidth
-                      variant="outline"
-                      onClick={handleCopyCostPix}
-                      className={`h-12 border-2 transition-all mb-6 ${costPixCopied ? "border-green-500 text-green-500 bg-green-500/5" : "border-yellow-500/30 text-yellow-400 hover:border-yellow-500 hover:bg-yellow-500/5"}`}
-                    >
-                      {costPixCopied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
-                      {costPixCopied ? t('aluno.finance.pix_copied') : t('aluno.finance.copy_pix_other')}
-                    </Button>
+                    <div className="mb-6 flex flex-col items-center space-y-3">
+                      <div className="p-4 bg-white rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
+                        <QRCodeSVG value={pixPayload} size={160} />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCopyCostPix}
+                        className={`text-[10px] transition-all h-8 ${costPixCopied ? "text-green-600 bg-green-500/10" : "text-gray-500 hover:text-yellow-600 hover:bg-yellow-500/10"}`}
+                      >
+                        {costPixCopied ? <Check size={14} className="mr-1" /> : <Copy size={14} className="mr-1" />}
+                        {costPixCopied ? t('aluno.finance.pix_copied') : 'Copiar Código PIX'}
+                      </Button>
+                    </div>
 
                     <div className="space-y-6">
                       {/* Avaliações Section */}
                       <div>
-                        <h4 className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-3 ml-1">{t('aluno.finance.evaluations')}</h4>
+                        <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 ml-1">{t('aluno.finance.evaluations')}</h4>
                         <div className="space-y-3">
                           {myEvaluations.length > 0 ? (
                             myEvaluations.map(payment => (
-                              <div key={payment.id} className="bg-stone-900/80 p-4 rounded-xl border border-stone-800 flex justify-between items-center shadow-sm">
+                              <div key={payment.id} className="bg-white/80 p-4 rounded-xl border border-sky-200 flex justify-between items-center shadow-sm">
                                 <div>
-                                  <p className="text-sm font-bold text-white">{payment.month}</p>
-                                  <p className="text-[10px] text-stone-500 font-mono">{t('aluno.finance.value')} R$ {payment.amount?.toFixed(2).replace('.', ',')}</p>
+                                  <p className="text-sm font-bold text-gray-900">{payment.month}</p>
+                                  <p className="text-[10px] text-gray-600 font-mono">{t('aluno.finance.value')} R$ {payment.amount?.toFixed(2).replace('.', ',')}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {payment.status === 'paid' ? (
@@ -1608,7 +1605,7 @@ export const DashboardAluno: React.FC<Props> = ({
                                   ) : (
                                     <button
                                       onClick={() => { setSelectedPaymentToProof(payment); fileInputRef.current?.click(); }}
-                                      className="text-[10px] font-black uppercase text-yellow-500 hover:text-yellow-400 bg-yellow-500/5 px-2 py-1 rounded border border-yellow-500/20"
+                                      className="text-[10px] font-black uppercase text-yellow-500 hover:text-yellow-700 bg-yellow-500/5 px-2 py-1 rounded border border-yellow-500/20"
                                     >
                                       {payment.proof_url ? t('aluno.finance.change_proof') : t('aluno.finance.pay_now')}
                                     </button>
@@ -1616,7 +1613,7 @@ export const DashboardAluno: React.FC<Props> = ({
                                   {payment.proof_url && (
                                     <button
                                       onClick={() => handleViewPaymentProof(payment.proof_url!, payment.month || t('aluno.finance.view_proof'), 'payment_proofs')}
-                                      className="text-blue-400 hover:text-blue-300 transition-all"
+                                      className="text-blue-700 hover:text-blue-600 transition-all"
                                       title={t('aluno.finance.view_proof')}
                                     >
                                       <Eye size={18} />
@@ -1626,21 +1623,21 @@ export const DashboardAluno: React.FC<Props> = ({
                               </div>
                             ))
                           ) : (
-                            <p className="text-stone-500 text-[10px] italic ml-1">{t('aluno.finance.evaluations_empty')}</p>
+                            <p className="text-gray-600 text-[10px] italic ml-1">{t('aluno.finance.evaluations_empty')}</p>
                           )}
                         </div>
                       </div>
 
                       {/* EventRegistrations Section */}
                       <div>
-                        <h4 className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-3 ml-1">{t('aluno.finance.events')}</h4>
+                        <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 ml-1">{t('aluno.finance.events')}</h4>
                         <div className="space-y-3">
                           {myEventRegistrations.length > 0 ? (
                             myEventRegistrations.map(reg => (
-                              <div key={reg.id} className="bg-stone-900/80 p-4 rounded-xl border border-stone-800 flex justify-between items-center shadow-sm">
+                              <div key={reg.id} className="bg-white/80 p-4 rounded-xl border border-sky-200 flex justify-between items-center shadow-sm">
                                 <div>
-                                  <p className="text-sm font-bold text-white truncate max-w-[150px]">{reg.event_title}</p>
-                                  <p className="text-[10px] text-stone-500 font-mono uppercase">{reg.status === 'paid' ? t('aluno.finance.paid') : t('aluno.finance.pending')}</p>
+                                  <p className="text-sm font-bold text-gray-900 truncate max-w-[150px]">{reg.event_title}</p>
+                                  <p className="text-[10px] text-gray-600 font-mono uppercase">{reg.status === 'paid' ? t('aluno.finance.paid') : t('aluno.finance.pending')}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {reg.status === 'paid' ? (
@@ -1652,7 +1649,7 @@ export const DashboardAluno: React.FC<Props> = ({
                                         // Small delay for mobile PWA
                                         setTimeout(() => eventFileInputRef.current?.click(), 100);
                                       }}
-                                      className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-400 bg-orange-500/5 px-2 py-1 rounded border border-orange-500/20"
+                                      className="text-[10px] font-black uppercase text-orange-500 hover:text-orange-600 bg-orange-500/5 px-2 py-1 rounded border border-orange-500/20"
                                     >
                                       {reg.proof_url ? 'Alterar Comprovante' : 'Pagar Agora'}
                                     </button>
@@ -1660,7 +1657,7 @@ export const DashboardAluno: React.FC<Props> = ({
                                   {reg.proof_url && (
                                     <button
                                       onClick={() => handleViewPaymentProof(reg.proof_url!, reg.event_title + ' Comprovante', 'payment_proofs')}
-                                      className="text-blue-400 hover:text-blue-300 transition-all"
+                                      className="text-blue-700 hover:text-blue-600 transition-all"
                                       title="Ver Comprovante"
                                     >
                                       <Eye size={18} />
@@ -1671,37 +1668,30 @@ export const DashboardAluno: React.FC<Props> = ({
                               </div>
                             ))
                           ) : (
-                            <p className="text-stone-500 text-[10px] italic ml-1">Nenhuma inscrição.</p>
+                            <p className="text-gray-600 text-[10px] italic ml-1">Nenhuma inscrição.</p>
                           )}
                         </div>
                       </div>
 
                       {/* Uniform Orders Selection */}
                       <div>
-                        <h4 className="text-[10px] font-black text-stone-500 uppercase tracking-widest mb-3 ml-1">{t('aluno.uniform.title')}</h4>
+                        <h4 className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-3 ml-1">{t('aluno.uniform.title')}</h4>
                         <div className="space-y-3">
                           <Button
                             fullWidth
                             variant="outline"
                             size="sm"
                             onClick={() => setActiveMainTab('uniform')}
-                            className="mb-2 border-dashed border-stone-700 text-stone-400 hover:text-white hover:border-stone-500 transition-all text-[10px] h-8"
+                            className="mb-2 border-dashed border-sky-300 text-gray-600 hover:text-gray-900 hover:border-stone-500 transition-all text-[10px] h-8"
                           >
                             <PlusCircle size={14} className="mr-1" /> {t('aluno.uniform.new_order')}
                           </Button>
                           {uniformOrders.filter(o => o.user_id === user.id).length > 0 ? (
                             uniformOrders.filter(o => o.user_id === user.id).map(order => (
-                              <div key={order.id} className="bg-stone-900/80 p-4 rounded-xl border border-stone-800 flex justify-between items-center shadow-sm">
+                              <div key={order.id} className="bg-white/80 p-4 rounded-xl border border-sky-200 flex justify-between items-center shadow-sm">
                                 <div>
-                                  <p className="text-sm font-bold text-white">{order.item}</p>
-                                  <p className="text-[10px] text-stone-500 font-mono uppercase">
-                                    {t('aluno.uniform.status')} {
-                                      order.status === 'pending' ? t('prof.uniform.status_pending') :
-                                      order.status === 'paid' ? t('prof.uniform.status_paid') :
-                                      order.status === 'producing' ? t('prof.uniform.status_producing') :
-                                      t('prof.uniform.status_delivered')
-                                    }
-                                  </p>
+                                  <p className="text-sm font-bold text-gray-900">{order.item}</p>
+                                  <p className="text-[10px] text-gray-600 font-mono uppercase">{t('aluno.uniform.status')} {order.status === 'pending' ? t('aluno.finance.pending') : t('aluno.uniform.confirmed')}</p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   {order.status !== 'pending' ? (
@@ -1709,7 +1699,7 @@ export const DashboardAluno: React.FC<Props> = ({
                                   ) : (
                                     <button
                                       onClick={() => { setSelectedOrderToProof(order); uniformFileInputRef.current?.click(); }}
-                                      className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-400 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/20"
+                                      className="text-[10px] font-black uppercase text-emerald-500 hover:text-emerald-700 bg-emerald-500/5 px-2 py-1 rounded border border-emerald-500/20"
                                     >
                                       {order.proof_url ? t('aluno.finance.change_proof') : t('aluno.finance.pay_now')}
                                     </button>
@@ -1717,7 +1707,7 @@ export const DashboardAluno: React.FC<Props> = ({
                                   {order.proof_url && (
                                     <button
                                       onClick={() => handleViewPaymentProof(order.proof_url!, order.item + ' Comprovante', 'payment_proofs')}
-                                      className="text-blue-400 hover:text-blue-300 transition-all"
+                                      className="text-blue-700 hover:text-blue-600 transition-all"
                                       title={t('aluno.finance.view_proof')}
                                     >
                                       <Eye size={18} />
@@ -1727,7 +1717,7 @@ export const DashboardAluno: React.FC<Props> = ({
                               </div>
                             ))
                           ) : (
-                            <p className="text-stone-500 text-[10px] italic ml-1">{t('aluno.uniform.empty')}</p>
+                            <p className="text-gray-600 text-[10px] italic ml-1">{t('aluno.uniform.empty')}</p>
                           )}
                           <input type="file" ref={uniformFileInputRef} accept="image/*, application/pdf, .heic, .heif" className="hidden" onChange={handleFileChangeForUniformProof} />
                         </div>
@@ -1742,22 +1732,22 @@ export const DashboardAluno: React.FC<Props> = ({
           {/* --- TAB: NOTAS --- */}
           {activeMainTab === 'grades' && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-stone-800 rounded-xl p-6 border border-stone-700">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="bg-sky-100 rounded-xl p-6 border border-sky-300">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <Award className="text-blue-500" />
                   {t('aluno.grades.title')}
                 </h3>
                 <div className="space-y-3">
                   {(studentGrades || []).length > 0 ? (
                     (studentGrades || []).map(g => (
-                      <div key={g.id} className="flex items-center justify-between bg-stone-900 p-3 rounded border-l-2 border-blue-500">
+                      <div key={g.id} className="flex items-center justify-between bg-white p-3 rounded border-l-2 border-blue-500">
                         <div className="flex items-center gap-3">
-                          <span className="text-stone-300 text-sm">
+                          <span className="text-gray-600 text-sm">
                             {g.category === 'theory' ? t('aluno.grades.theory') : g.category === 'movement' ? t('aluno.grades.movement') : t('aluno.grades.musicality')}
                           </span>
                         </div>
                         <div className="flex items-center gap-3">
-                          <span className="text-white font-bold">
+                          <span className="text-gray-900 font-bold">
                             {Number.isFinite(typeof g.numeric === 'number' ? g.numeric : Number(g.numeric))
                               ? (typeof g.numeric === 'number' ? g.numeric : Number(g.numeric)).toFixed(1)
                               : '-'}
@@ -1767,10 +1757,10 @@ export const DashboardAluno: React.FC<Props> = ({
                       </div>
                     ))
                   ) : (
-                    <p className="text-stone-500 italic">{t('aluno.grades.empty')}</p>
+                    <p className="text-gray-600 italic">{t('aluno.grades.empty')}</p>
                   )}
                 </div>
-                <p className="text-xs text-stone-500 mt-3">
+                <p className="text-xs text-gray-600 mt-3">
                 </p>
               </div>
             </div>
@@ -1779,28 +1769,28 @@ export const DashboardAluno: React.FC<Props> = ({
           {/* --- TAB: TRABALHOS --- */}
           {activeMainTab === 'assignments' && (
             <div className="space-y-6 animate-fade-in">
-              <div className="bg-stone-800 rounded-xl p-6 border border-stone-700">
-                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+              <div className="bg-sky-100 rounded-xl p-6 border border-sky-300">
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <FileText className="text-cyan-500" />
                   {t('aluno.assignments.title')}
                 </h3>
                 <div className="space-y-3">
                   {myAssignments && myAssignments.length > 0 ? (
                     myAssignments.map(assignment => (
-                      <div key={assignment.id} className="bg-stone-900 p-4 rounded border-l-2 border-cyan-500">
+                      <div key={assignment.id} className="bg-white p-4 rounded border-l-2 border-cyan-500">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                           <div className="flex-1">
-                            <h4 className="font-bold text-white text-sm mb-1">{assignment.title}</h4>
-                            <p className="text-stone-400 text-xs mb-2">{assignment.description}</p>
-                            <p className="text-stone-500 text-xs">{t('aluno.assignments.due_date')} {assignment.due_date.split('-').reverse().join('/')}</p>
+                            <h4 className="font-bold text-gray-900 text-sm mb-1">{assignment.title}</h4>
+                            <p className="text-gray-600 text-xs mb-2">{assignment.description}</p>
+                            <p className="text-gray-600 text-xs">{t('aluno.assignments.due_date')} {assignment.due_date.split('-').reverse().join('/')}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {assignment.status === 'completed' ? (
-                              <span className="text-green-400 text-xs flex items-center gap-1 whitespace-nowrap">
+                              <span className="text-green-700 text-xs flex items-center gap-1 whitespace-nowrap">
                                 <Check size={12} /> {t('aluno.assignments.delivered')}
                               </span>
                             ) : (
-                              <span className="text-yellow-400 text-xs flex items-center gap-1 whitespace-nowrap">
+                              <span className="text-yellow-700 text-xs flex items-center gap-1 whitespace-nowrap">
                                 <Clock size={12} /> {t('aluno.finance.pending')}
                               </span>
                             )}
@@ -1810,7 +1800,7 @@ export const DashboardAluno: React.FC<Props> = ({
                         {assignment.attachment_url && (
                           <Button
                             variant="secondary"
-                            className="text-[10px] h-auto px-2 py-1 mt-2 w-full border-cyan-500/30 text-cyan-400"
+                            className="text-[10px] h-auto px-2 py-1 mt-2 w-full border-cyan-500/30 text-cyan-700"
                             onClick={() => window.open(assignment.attachment_url, '_blank')}
                           >
                             <Eye size={12} className="mr-1" /> {t('aluno.assignments.prof_material')}
@@ -1821,7 +1811,7 @@ export const DashboardAluno: React.FC<Props> = ({
                         {assignment.submission_url && (
                           <Button
                             variant="outline"
-                            className="text-[10px] h-auto px-2 py-1 mt-2 w-full border-green-500/30 text-green-400"
+                            className="text-[10px] h-auto px-2 py-1 mt-2 w-full border-green-500/30 text-green-700"
                             onClick={() => handleViewAssignment(assignment.submission_url!, assignment.submission_name || 'Trabalho')}
                           >
                             <CheckCircle size={12} className="mr-1" /> {t('aluno.assignments.my_answer')}
@@ -1859,7 +1849,7 @@ export const DashboardAluno: React.FC<Props> = ({
                       </div>
                     ))
                   ) : (
-                    <p className="text-stone-500 text-sm italic">Nenhum trabalho atribuído.</p>
+                    <p className="text-gray-600 text-sm italic">Nenhum trabalho atribuído.</p>
                   )}
                 </div>
               </div>
@@ -1868,11 +1858,11 @@ export const DashboardAluno: React.FC<Props> = ({
 
           {/* --- TAB: MÚSICAS --- */}
           {activeMainTab === 'music' && (
-            <div className="bg-stone-800 rounded-2xl p-8 border border-stone-700 animate-fade-in shadow-2xl relative overflow-hidden">
+            <div className="bg-sky-100 rounded-2xl p-8 border border-sky-300 animate-fade-in shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-500/5 blur-[80px] rounded-full -mr-32 -mt-32"></div>
 
               <div className="relative z-10">
-                <Button variant="ghost" className="mb-4 text-stone-400 p-0 hover:text-white" onClick={() => setActiveMainTab('overview')}>
+                <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
                   <ArrowLeft size={16} className="mr-2" />
                   Voltar ao Painel
                 </Button>
@@ -1881,45 +1871,45 @@ export const DashboardAluno: React.FC<Props> = ({
                     <Music size={32} />
                   </div>
                   <div>
-                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{t('aluno.music.title')}</h2>
-                    <p className="text-stone-400 text-sm">{t('aluno.music.subtitle')}</p>
+                    <h2 className="text-3xl font-black text-gray-900 tracking-tighter uppercase">{t('aluno.music.title')}</h2>
+                    <p className="text-gray-600 text-sm">{t('aluno.music.subtitle')}</p>
                   </div>
                 </div>
 
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {musicList.length > 0 ? (
                     musicList.map(m => (
-                      <div key={m.id} className="bg-stone-900/80 backdrop-blur-sm p-5 rounded-2xl border-2 border-stone-800 hover:border-yellow-500/30 transition-all group flex flex-col justify-between h-full">
+                      <div key={m.id} className="bg-white/80 backdrop-blur-sm p-5 rounded-2xl border-2 border-sky-200 hover:border-yellow-500/30 transition-all group flex flex-col justify-between h-full">
                         <div>
                           <div className="flex justify-between items-start mb-3">
                             <div className="max-w-[80%]">
-                              <p className="text-white font-black leading-tight group-hover:text-yellow-400 transition-colors line-clamp-2">{m.title}</p>
-                              <span className="text-[9px] font-black bg-stone-800 text-stone-500 px-2 py-0.5 rounded uppercase tracking-widest border border-stone-700 inline-block mt-1">
+                              <p className="text-gray-900 font-black leading-tight group-hover:text-yellow-700 transition-colors line-clamp-2">{m.title}</p>
+                              <span className="text-[9px] font-black bg-sky-100 text-gray-600 px-2 py-0.5 rounded uppercase tracking-widest border border-sky-300 inline-block mt-1">
                                 {m.category}
                               </span>
                             </div>
                             {/* Audio player removed */}
                           </div>
                           {m.lyrics && (
-                            <div className="mt-2 p-3 bg-black/40 rounded-xl border border-stone-800 group-hover:border-stone-700 transition-all">
-                              <p className="text-stone-400 text-[11px] leading-relaxed whitespace-pre-line line-clamp-4 font-medium italic">
+                            <div className="mt-2 p-3 bg-black/40 rounded-xl border border-sky-200 group-hover:border-sky-300 transition-all">
+                              <p className="text-gray-600 text-[11px] leading-relaxed whitespace-pre-line line-clamp-4 font-medium italic">
                                 {m.lyrics}
                               </p>
                             </div>
                           )}
                         </div>
 
-                        <div className="flex justify-between items-center mt-4 pt-4 border-t border-stone-800">
-                          <span className="text-[9px] font-bold text-stone-600 flex items-center gap-1">
+                        <div className="flex justify-between items-center mt-4 pt-4 border-t border-sky-200">
+                          <span className="text-[9px] font-bold text-gray-600 flex items-center gap-1">
                             <Clock size={10} /> {new Date(m.created_at || Date.now()).toLocaleDateString('pt-BR')}
                           </span>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="col-span-full py-20 bg-stone-900/30 rounded-3xl border-2 border-dashed border-stone-800 flex flex-col items-center justify-center">
+                    <div className="col-span-full py-20 bg-white/30 rounded-3xl border-2 border-dashed border-sky-200 flex flex-col items-center justify-center">
                       <Music size={48} className="text-stone-700 mb-4 animate-pulse" />
-                      <p className="text-stone-500 font-bold uppercase tracking-widest text-sm">{t('aluno.music.empty')}</p>
+                      <p className="text-gray-600 font-bold uppercase tracking-widest text-sm">{t('aluno.music.empty')}</p>
                     </div>
                   )}
                 </div>
@@ -1929,26 +1919,26 @@ export const DashboardAluno: React.FC<Props> = ({
 
           {/* --- TAB: TREINO EM CASA --- */}
           {activeMainTab === 'home_training' && (
-            <div className="bg-stone-800 rounded-xl p-6 border border-stone-700 animate-fade-in shadow-2xl">
-              <Button variant="ghost" className="mb-4 text-stone-400 p-0 hover:text-white" onClick={() => setActiveMainTab('overview')}>
+            <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 animate-fade-in shadow-2xl">
+              <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
                 <ArrowLeft size={16} className="mr-2" />
                 {t('common.back_panel')}
               </Button>
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2"><Video size={24} className="text-purple-500" /> {t('training.title')}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2"><Video size={24} className="text-purple-500" /> {t('training.title')}</h2>
 
-              <div className="bg-stone-900 p-4 rounded-lg mb-6 border-l-4 border-orange-500">
-                <h3 className="text-lg font-bold text-white mb-3">{t('training.upload')}</h3>
+              <div className="bg-white p-4 rounded-lg mb-6 border-l-4 border-orange-500">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t('training.upload')}</h3>
 
                 <div className="flex gap-2 mb-4">
                   <button
                     onClick={() => setTrainingType('link')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${trainingType === 'link' ? 'bg-orange-600 text-white' : 'bg-stone-700 text-stone-400'}`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${trainingType === 'link' ? 'bg-orange-600 text-gray-900' : 'bg-sky-200 text-gray-600'}`}
                   >
                     {t('aluno.training.link')}
                   </button>
                   <button
                     onClick={() => setTrainingType('file')}
-                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${trainingType === 'file' ? 'bg-orange-600 text-white' : 'bg-stone-700 text-stone-400'}`}
+                    className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors ${trainingType === 'file' ? 'bg-orange-600 text-gray-900' : 'bg-sky-200 text-gray-600'}`}
                   >
                     {t('aluno.training.upload')}
                   </button>
@@ -1956,54 +1946,54 @@ export const DashboardAluno: React.FC<Props> = ({
 
                 {trainingType === 'link' ? (
                   <form onSubmit={handleAddTrainingLink} className="space-y-3">
-                    <div className="bg-stone-900/50 p-4 rounded-lg border border-stone-700">
-                      <label className="block text-xs text-stone-400 mb-2">{t('aluno.training.paste_link')}</label>
+                    <div className="bg-sky-50/50 p-4 rounded-lg border border-sky-300">
+                      <label className="block text-xs text-gray-600 mb-2">{t('aluno.training.paste_link')}</label>
                       <input
                         type="url"
                         value={videoLink}
                         onChange={(e) => setVideoLink(e.target.value)}
                         placeholder="https://drive.google.com/..."
-                        className="w-full bg-stone-800 border border-stone-600 rounded p-2 text-sm text-white focus:outline-none focus:border-orange-500"
+                        className="w-full bg-sky-100 border border-sky-300 rounded p-2 text-sm text-gray-900 focus:outline-none focus:border-orange-500"
                         required
                       />
-                      <p className="text-[10px] text-stone-500 mt-2">{t('aluno.training.link_hint')}</p>
+                      <p className="text-[10px] text-gray-600 mt-2">{t('aluno.training.link_hint')}</p>
                     </div>
                     <Button fullWidth type="submit" disabled={uploading || !videoLink}>
                       {uploading ? t('common.saving') : t('training.save_link')}
                     </Button>
                   </form>
                 ) : (
-                  <div className="border-2 border-dashed border-stone-600 rounded-lg p-6 flex flex-col items-center justify-center bg-stone-900/50 hover:bg-stone-900 transition-colors">
+                  <div className="border-2 border-dashed border-sky-300 rounded-lg p-6 flex flex-col items-center justify-center bg-sky-50/50 hover:bg-white transition-colors">
                     {uploading ? (
                       <div className="text-center">
                         <UploadCloud size={32} className="text-orange-500 animate-bounce mx-auto mb-2" />
-                        <p className="text-white">{t('aluno.training.sending')}</p>
+                        <p className="text-gray-900">{t('aluno.training.sending')}</p>
                       </div>
                     ) : (
                       <>
-                        <Video size={32} className="text-stone-500 mb-2" />
+                        <Video size={32} className="text-gray-600 mb-2" />
                         <label className="cursor-pointer">
-                          <span className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-block shadow-lg">
+                          <span className="bg-orange-600 hover:bg-orange-500 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-block shadow-lg">
                             {t('aluno.training.select_video')}
                           </span>
                           <input type="file" accept="video/*" className="hidden" onChange={handleUploadVideo} disabled={uploading} />
                         </label>
-                        <p className="text-xs text-stone-500 mt-2">{t('aluno.training.video_hint')}</p>
+                        <p className="text-xs text-gray-600 mt-2">{t('aluno.training.video_hint')}</p>
                       </>
                     )}
                   </div>
                 )}
               </div>
 
-              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><Clock size={20} className="text-stone-400" /> {t('training.my_videos')}</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2"><Clock size={20} className="text-gray-600" /> {t('training.my_videos')}</h3>
               <div className="space-y-3">
                 {myHomeTrainings.length > 0 ? (
                   myHomeTrainings.map(training => (
-                    <div key={training.id} className="bg-stone-900 p-4 rounded-lg border-l-4 border-purple-500 flex justify-between items-center">
+                    <div key={training.id} className="bg-white p-4 rounded-lg border-l-4 border-purple-500 flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-white">{training.video_name}</p>
-                        <p className="text-stone-400 text-sm">{t('common.sent_on')}: {training.date}</p>
-                        <p className="text-stone-500 text-xs">{t('common.expires_on')}: {new Date(training.expires_at).toLocaleDateString('pt-BR')}</p>
+                        <p className="font-bold text-gray-900">{training.video_name}</p>
+                        <p className="text-gray-600 text-sm">{t('common.sent_on')}: {training.date}</p>
+                        <p className="text-gray-600 text-xs">{t('common.expires_on')}: {new Date(training.expires_at).toLocaleDateString('pt-BR')}</p>
                       </div>
                       <Button
                         variant="secondary"
@@ -2015,7 +2005,7 @@ export const DashboardAluno: React.FC<Props> = ({
                     </div>
                   ))
                 ) : (
-                  <p className="text-stone-500 italic text-center py-4">{t('training.empty')}</p>
+                  <p className="text-gray-600 italic text-center py-4">{t('training.empty')}</p>
                 )}
               </div>
             </div>
@@ -2023,45 +2013,45 @@ export const DashboardAluno: React.FC<Props> = ({
 
           {/* --- TAB: BOLETIM --- */}
           {activeMainTab === 'school_report' && (
-            <div className="bg-stone-800 rounded-xl p-6 border border-stone-700 animate-fade-in">
-              <Button variant="ghost" className="mb-4 text-stone-400 p-0 hover:text-white" onClick={() => setActiveMainTab('overview')}>
+            <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 animate-fade-in">
+              <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
                 <ArrowLeft size={16} className="mr-2" />
                 {t('common.back_panel')}
               </Button>
-              <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2"><GraduationCap size={24} className="text-orange-500" /> {t('report.title')}</h2>
+              <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2"><GraduationCap size={24} className="text-orange-500" /> {t('report.title')}</h2>
 
-              <div className="bg-stone-900 p-4 rounded-lg mb-6 border-l-4 border-orange-500">
-                <h3 className="text-lg font-bold text-white mb-3">{t('report.upload')}</h3>
-                <div className="border-2 border-dashed border-stone-600 rounded-lg p-6 flex flex-col items-center justify-center bg-stone-900/50 hover:bg-stone-900 transition-colors">
+              <div className="bg-white p-4 rounded-lg mb-6 border-l-4 border-orange-500">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{t('report.upload')}</h3>
+                <div className="border-2 border-dashed border-sky-300 rounded-lg p-6 flex flex-col items-center justify-center bg-sky-50/50 hover:bg-white transition-colors">
                   {uploadingReport ? (
                     <div className="text-center">
                       <UploadCloud size={32} className="text-orange-500 animate-bounce mx-auto mb-2" />
-                      <p className="text-white">{t('aluno.report.sending')}</p>
+                      <p className="text-gray-900">{t('aluno.report.sending')}</p>
                     </div>
                   ) : (
                     <>
-                      <FileText size={32} className="text-stone-500 mb-2" />
+                      <FileText size={32} className="text-gray-600 mb-2" />
                       <label className="cursor-pointer">
-                        <span className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-block shadow-lg">
+                        <span className="bg-orange-600 hover:bg-orange-500 text-gray-900 px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-block shadow-lg">
                           Selecionar Arquivo
                         </span>
                         <input type="file" accept=".pdf,.doc,.docx,.jpg,.png,.heic,.heif" className="hidden" onChange={handleUploadReport} disabled={uploadingReport} />
                       </label>
-                      <p className="text-xs text-stone-500 mt-2">{t('aluno.report.file_hint')}</p>
+                      <p className="text-xs text-gray-600 mt-2">{t('aluno.report.file_hint')}</p>
                     </>
                   )}
                 </div>
               </div>
 
-              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><FileText size={20} className="text-stone-400" /> {t('report.my_reports')}</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2"><FileText size={20} className="text-gray-600" /> {t('report.my_reports')}</h3>
               <div className="space-y-3">
                 {mySchoolReports.length > 0 ? (
                   mySchoolReports.map(report => (
-                    <div key={report.id} className="bg-stone-900 p-4 rounded-lg border-l-4 border-blue-500 flex justify-between items-center">
+                    <div key={report.id} className="bg-white p-4 rounded-lg border-l-4 border-blue-500 flex justify-between items-center">
                       <div>
-                        <p className="font-bold text-white">{report.file_name}</p>
-                        <p className="text-stone-400 text-sm">Período: {report.period}</p>
-                        <p className="text-stone-500 text-xs">Enviado em: {report.date}</p>
+                        <p className="font-bold text-gray-900">{report.file_name}</p>
+                        <p className="text-gray-600 text-sm">Período: {report.period}</p>
+                        <p className="text-gray-600 text-xs">Enviado em: {report.date}</p>
                       </div>
                       <Button variant="secondary" className="text-xs h-auto px-3 py-1.5" onClick={() => handleViewReport(report.file_url, report.file_name)}>
                         <Eye size={16} className="mr-1" /> Ver Boletim
@@ -2069,7 +2059,7 @@ export const DashboardAluno: React.FC<Props> = ({
                     </div>
                   ))
                 ) : (
-                  <p className="text-stone-500 italic text-center py-4">Nenhum boletim escolar enviado ainda.</p>
+                  <p className="text-gray-600 italic text-center py-4">Nenhum boletim escolar enviado ainda.</p>
                 )}
               </div>
             </div>
@@ -2077,21 +2067,21 @@ export const DashboardAluno: React.FC<Props> = ({
 
           {/* --- TAB: UNIFORME --- */}
           {activeMainTab === 'uniform' && (
-            <div className="bg-stone-800 rounded-xl p-6 border border-stone-700 animate-fade-in">
-              <Button variant="ghost" className="mb-4 text-stone-400 p-0 hover:text-white" onClick={() => setActiveMainTab('overview')}>
+            <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 animate-fade-in">
+              <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
                 <ArrowLeft size={16} className="mr-2" />
                 Voltar ao Painel
               </Button>
-              <div className="bg-stone-900 p-4 rounded-lg mb-6 border-l-4 border-orange-500">
-                <h3 className="text-lg font-bold text-white mb-3">Fazer Novo Pedido</h3>
+              <div className="bg-white p-4 rounded-lg mb-6 border-l-4 border-orange-500">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">Fazer Novo Pedido</h3>
                 <form onSubmit={handleOrderUniform} className="space-y-4">
                   <div>
-                    <label htmlFor="item" className="block text-sm text-stone-400 mb-1">Item</label>
+                    <label htmlFor="item" className="block text-sm text-gray-600 mb-1">Item</label>
                     <select
                       id="item"
                       value={orderForm.item}
                       onChange={e => setOrderForm({ ...orderForm, item: e.target.value })}
-                      className="w-full bg-stone-800 border border-stone-600 rounded p-2 text-white"
+                      className="w-full bg-sky-100 border border-sky-300 rounded p-2 text-gray-900"
                     >
                       <option value="combo">Combo (Blusa + Calça)</option>
                       <option value="shirt">Blusa Oficial</option>
@@ -2102,34 +2092,34 @@ export const DashboardAluno: React.FC<Props> = ({
                   <div className="grid grid-cols-2 gap-4">
                     {(orderForm.item === 'shirt' || orderForm.item === 'combo') && (
                       <div>
-                        <label htmlFor="shirtSize" className="block text-sm text-stone-400 mb-1">Tamanho da Blusa</label>
+                        <label htmlFor="shirtSize" className="block text-sm text-gray-600 mb-1">Tamanho da Blusa</label>
                         <input
                           id="shirtSize"
                           type="text"
                           placeholder="Ex: P, M, G, GG"
                           value={orderForm.shirtSize}
                           onChange={(e) => setOrderForm({ ...orderForm, shirtSize: e.target.value })}
-                          className="w-full bg-stone-800 border border-stone-600 rounded p-2 text-white"
+                          className="w-full bg-sky-100 border border-sky-300 rounded p-2 text-gray-900"
                           required={orderForm.item === 'shirt' || orderForm.item === 'combo'}
                         />
                       </div>
                     )}
                     {(orderForm.item === 'pants_roda' || orderForm.item === 'pants_train' || orderForm.item === 'combo') && (
                       <div>
-                        <label htmlFor="pantsSize" className="block text-sm text-stone-400 mb-1">Tamanho da Calça</label>
+                        <label htmlFor="pantsSize" className="block text-sm text-gray-600 mb-1">Tamanho da Calça</label>
                         <input
                           id="pantsSize"
                           type="text"
                           placeholder="Ex: 38, 40, 42, 44"
                           value={orderForm.pantsSize}
                           onChange={(e) => setOrderForm({ ...orderForm, pantsSize: e.target.value })}
-                          className="w-full bg-stone-800 border border-stone-600 rounded p-2 text-white"
+                          className="w-full bg-sky-100 border border-sky-300 rounded p-2 text-gray-900"
                           required={orderForm.item === 'pants_roda' || orderForm.item === 'pants_train' || orderForm.item === 'combo'}
                         />
                       </div>
                     )}
                   </div>
-                  <div className="text-right text-white font-bold text-lg">
+                  <div className="text-right text-gray-900 font-bold text-lg">
                     Total: R$ {getCurrentPrice().toFixed(2).replace('.', ',')}
                   </div>
                   <Button fullWidth type="submit">
@@ -2138,32 +2128,31 @@ export const DashboardAluno: React.FC<Props> = ({
                 </form>
               </div>
 
-              <h3 className="text-lg font-bold text-white mb-3 flex items-center gap-2"><ShoppingBag size={20} className="text-stone-400" /> Meus Pedidos</h3>
+              <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2"><ShoppingBag size={20} className="text-gray-600" /> Meus Pedidos</h3>
               <div className="space-y-3">
                 {myOrders.length > 0 ? (
                   myOrders.map(order => (
-                    <div key={order.id} className="bg-stone-900 p-4 rounded-lg border-l-4 border-blue-500">
+                    <div key={order.id} className="bg-white p-4 rounded-lg border-l-4 border-blue-500">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-bold text-white">{order.item}</p>
-                          <p className="text-stone-400 text-sm">
+                          <p className="font-bold text-gray-900">{order.item}</p>
+                          <p className="text-gray-600 text-sm">
                             {order.shirt_size && `Blusa: ${order.shirt_size}`}
                             {order.shirt_size && order.pants_size && ', '}
                             {order.pants_size && `Calça: ${order.pants_size}`}
                           </p>
-                          <p className="text-stone-500 text-xs">Pedido em: {order.date}</p>
+                          <p className="text-gray-600 text-xs">Pedido em: {order.date}</p>
                         </div>
                         <div className="flex flex-col items-end gap-2">
-                          <span className="text-green-400 font-bold">R$ {order.total.toFixed(2).replace('.', ',')}</span>
-                          {order.status === 'pending' && <span className="px-2 py-1 rounded bg-yellow-900/30 text-yellow-400 text-xs border border-yellow-900/50">{t('prof.uniform.status_pending')}</span>}
-                          {order.status === 'paid' && <span className="px-2 py-1 rounded bg-blue-900/30 text-blue-400 text-xs border border-blue-900/50">{t('prof.uniform.status_paid')}</span>}
-                          {order.status === 'producing' && <span className="px-2 py-1 rounded bg-orange-900/30 text-orange-400 text-xs border border-orange-900/50">{t('prof.uniform.status_producing')}</span>}
-                          {order.status === 'delivered' && <span className="px-2 py-1 rounded bg-green-900/30 text-green-400 text-xs border border-green-900/50">{t('prof.uniform.status_delivered')}</span>}
+                          <span className="text-green-700 font-bold">R$ {order.total.toFixed(2).replace('.', ',')}</span>
+                          {order.status === 'pending' && <span className="px-2 py-1 rounded bg-yellow-900/30 text-yellow-700 text-xs border border-yellow-900/50">Pendente</span>}
+                          {order.status === 'ready' && <span className="px-2 py-1 rounded bg-blue-900/30 text-blue-700 text-xs border border-sky-300">Pago/Pronto</span>}
+                          {order.status === 'delivered' && <span className="px-2 py-1 rounded bg-green-900/30 text-green-700 text-xs border border-green-900/50">Entregue</span>}
                         </div>
                       </div>
 
                       {/* Proof actions */}
-                      <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-stone-700">
+                      <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-sky-300">
                         {order.status === 'pending' && !order.proof_url && (
                           <>
                             <Button
@@ -2192,13 +2181,13 @@ export const DashboardAluno: React.FC<Props> = ({
                           <>
                             <button
                               onClick={() => window.open(order.proof_url, '_blank')}
-                              className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1"
+                              className="text-blue-700 hover:text-blue-600 text-xs flex items-center gap-1"
                             >
                               <Eye size={14} /> Ver Comprovante
                             </button>
-                            {order.status === 'paid' && (
-                              <span className="text-yellow-400 text-xs flex items-center gap-1">
-                                <Clock size={12} /> {t('prof.uniform.analysis')}
+                            {order.status === 'pending' && (
+                              <span className="text-yellow-700 text-xs flex items-center gap-1">
+                                <Clock size={12} /> Aguardando Confirmação
                               </span>
                             )}
                           </>
@@ -2207,18 +2196,20 @@ export const DashboardAluno: React.FC<Props> = ({
                     </div>
                   ))
                 ) : (
-                  <p className="text-stone-500 italic text-center py-4">Nenhum pedido de uniforme realizado ainda.</p>
+                  <p className="text-gray-600 italic text-center py-4">Nenhum pedido de uniforme realizado ainda.</p>
                 )}
               </div>
             </div>
           )}
 
-          {/* ── FFPoints ── */}
-          {activeMainTab === 'ffpoints' && (
-            <FFPoints user={user} allUsersProfiles={allUsersProfiles} />
+          {/* ── APPoints ── */}
+          {activeMainTab === 'appoints' && (
+            <APPoints user={user} allUsersProfiles={allUsersProfiles} />
           )}
         </div>
       </div>
     </div>
   );
 };
+
+

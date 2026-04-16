@@ -322,13 +322,13 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
         return (
             <button
                 onClick={() => { setIsOpen(true); setIsMinimized(false); }}
-                className="fixed bottom-6 right-6 bg-pink-600 hover:bg-pink-500 text-white p-4 rounded-full shadow-2xl transition-all transform hover:scale-105 z-50 flex items-center justify-center animate-bounce-slow"
+                className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-gray-900 p-4 rounded-full shadow-2xl shadow-blue-600/30 transition-all transform hover:scale-105 z-50 flex items-center justify-center animate-bounce-slow"
                 title="Chat Global"
             >
                 <div className="relative">
                     <MessageSquare size={24} />
                     {unreadCount > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-pink-600 animate-pulse">
+                        <span className="absolute -top-2 -right-2 bg-red-500 text-gray-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-blue-600 animate-pulse">
                             {unreadCount}
                         </span>
                     )}
@@ -338,23 +338,23 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
     }
 
     return (
-        <div className={`fixed right-4 sm:right-6 bottom-4 sm:bottom-6 w-[90vw] sm:w-[350px] bg-stone-900 border border-stone-700 rounded-2xl shadow-2xl z-50 flex flex-col transition-all duration-300 ease-in-out ${isMinimized ? 'h-14' : 'h-[500px] max-h-[80vh]'}`}>
+        <div className={`fixed right-4 sm:right-6 bottom-4 sm:bottom-6 w-[90vw] sm:w-[350px] bg-white border border-sky-300 rounded-2xl shadow-2xl z-50 flex flex-col transition-all duration-300 ease-in-out ${isMinimized ? 'h-14' : 'h-[500px] max-h-[80vh]'}`}>
             {/* Header */}
-            <div className="flex items-center justify-between p-3 border-b border-stone-800 bg-stone-800/50 rounded-t-2xl cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
+            <div className="flex items-center justify-between p-3 border-b border-sky-200 bg-sky-100/50 rounded-t-2xl cursor-pointer" onClick={() => setIsMinimized(!isMinimized)}>
                 <div className="flex items-center gap-2">
-                    <MessageSquare size={18} className="text-pink-500" />
-                    <h3 className="font-bold text-white text-sm">Chat Global</h3>
+                    <MessageSquare size={18} className="text-blue-700" />
+                    <h3 className="font-bold text-gray-900 text-sm">Chat Global</h3>
                     {isMinimized && unreadCount > 0 && (
-                        <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2">
+                        <span className="bg-red-500 text-gray-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full ml-2">
                             {unreadCount} novas
                         </span>
                     )}
                 </div>
                 <div className="flex items-center gap-1">
-                    <button className="p-1.5 text-stone-400 hover:text-white hover:bg-stone-700 rounded transition-colors" title="Minimizar" onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}>
+                    <button className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-sky-200 rounded transition-colors" title="Minimizar" onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}>
                         <Minus size={16} />
                     </button>
-                    <button className="p-1.5 text-stone-400 hover:text-red-500 hover:bg-stone-700 rounded transition-colors" title="Fechar" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}>
+                    <button className="p-1.5 text-gray-600 hover:text-red-500 hover:bg-sky-200 rounded transition-colors" title="Fechar" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}>
                         <X size={16} />
                     </button>
                 </div>
@@ -371,7 +371,7 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                             </h4>
                             <div className="flex flex-wrap gap-2">
                                 {birthdaysToday.map(u => (
-                                    <span key={u.id} className="text-stone-300 text-[11px] bg-stone-900 border border-yellow-500/30 px-2 py-0.5 rounded-full">
+                                    <span key={u.id} className="text-gray-600 text-[11px] bg-white border border-yellow-500/30 px-2 py-0.5 rounded-full">
                                         {u.nickname || u.name} 🎉
                                     </span>
                                 ))}
@@ -379,9 +379,9 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                         </div>
                     )}
 
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-stone-900/50">
+                    <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-sky-50/50">
                         {messages.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-stone-500 italic space-y-2">
+                            <div className="h-full flex flex-col items-center justify-center text-gray-600 italic space-y-2">
                                 <MessageSquare size={32} className="opacity-20" />
                                 <p className="text-sm">Nenhuma mensagem ainda.</p>
                                 <p className="text-xs">Seja o primeiro a dizer olá!</p>
@@ -399,28 +399,28 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                         {showName && !isMe && (
                                             <div className="flex items-center gap-2 mb-1 ml-1">
                                                 {avatarSrc ? (
-                                                    <img src={avatarSrc} alt={displayName} className="w-5 h-5 rounded-full object-cover border border-stone-700" />
+                                                    <img src={avatarSrc} alt={displayName} className="w-5 h-5 rounded-full object-cover border border-sky-300" />
                                                 ) : (
-                                                    <div className="w-5 h-5 rounded-full bg-stone-700 flex items-center justify-center text-[8px] font-bold text-white uppercase border border-stone-600">
+                                                    <div className="w-5 h-5 rounded-full bg-sky-200 flex items-center justify-center text-[8px] font-bold text-gray-900 uppercase border border-sky-300">
                                                         {displayName.substring(0, 2)}
                                                     </div>
                                                 )}
-                                                <span className="text-[10px] font-bold text-stone-400">{displayName}</span>
+                                                <span className="text-[10px] font-bold text-gray-600">{displayName}</span>
                                             </div>
                                         )}
 
                                         {/* Editing Mode */}
                                         {editingMsgId === msg.id ? (
-                                            <div className={`max-w-[85%] rounded-2xl p-2 bg-stone-800 border border-stone-700 text-stone-200 shadow-xl`}>
+                                            <div className={`max-w-[85%] rounded-2xl p-2 bg-sky-100 border border-sky-300 text-gray-700 shadow-xl`}>
                                                 <textarea
                                                     value={editMsgText}
                                                     onChange={e => setEditMsgText(e.target.value)}
-                                                    className="w-full bg-stone-900 text-sm text-white border border-stone-700 rounded p-2 focus:outline-none focus:border-pink-500 h-20 custom-scrollbar"
+                                                    className="w-full bg-white text-sm text-gray-900 border border-sky-300 rounded p-2 focus:outline-none focus:border-pink-500 h-20 custom-scrollbar"
                                                     autoFocus
                                                 />
                                                 <div className="flex justify-end gap-2 mt-2">
-                                                    <button onClick={handleCancelEdit} className="text-xs text-stone-400 hover:text-white px-2 py-1">Cancelar</button>
-                                                    <button onClick={handleSaveEdit} className="text-xs bg-pink-600 hover:bg-pink-500 text-white px-3 py-1 rounded flex items-center gap-1">
+                                                    <button onClick={handleCancelEdit} className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1">Cancelar</button>
+                                                    <button onClick={handleSaveEdit} className="text-xs bg-blue-600 hover:bg-blue-500 text-gray-900 px-3 py-1 rounded flex items-center gap-1">
                                                         <Check size={12} /> Salvar
                                                     </button>
                                                 </div>
@@ -431,11 +431,11 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
 
                                                 <div
                                                     onClick={() => setActiveMessageId(activeMessageId === msg.id ? null : msg.id)}
-                                                    className={`rounded-2xl px-4 py-2 flex flex-col relative cursor-pointer transition-all ${activeMessageId === msg.id ? 'ring-2 ring-pink-500/50 scale-[1.02]' : ''} ${isMe ? 'bg-pink-600 text-white rounded-tr-sm' : 'bg-stone-800 border border-stone-700 text-stone-200 rounded-tl-sm'}`}
+                                                    className={`rounded-2xl px-4 py-2 flex flex-col relative cursor-pointer transition-all ${activeMessageId === msg.id ? 'ring-2 ring-blue-500/50 scale-[1.02]' : ''} ${isMe ? 'bg-blue-600 text-gray-900 rounded-tr-sm' : 'bg-sky-100 border border-sky-300 text-gray-700 rounded-tl-sm'}`}
                                                 >
                                                     {/* Reply Content */}
                                                     {msg.reply_to_id && (
-                                                        <div className={`text-[10px] mb-1 p-2 rounded border-l-2 bg-black/20 ${isMe ? 'border-pink-300' : 'border-stone-500'}`}>
+                                                        <div className={`text-[10px] mb-1 p-2 rounded border-l-2 bg-black/20 ${isMe ? 'border-blue-300' : 'border-stone-500'}`}>
                                                             <p className="font-bold opacity-70">{msg.reply_sender_name}</p>
                                                             <p className="line-clamp-1 opacity-60">{msg.reply_text}</p>
                                                         </div>
@@ -450,7 +450,7 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                                         <p className="text-sm break-words whitespace-pre-wrap">{msg.text}</p>
                                                     )}
 
-                                                    <div className={`flex items-center gap-1 mt-1 justify-end ${isMe ? 'text-pink-200' : 'text-stone-500'}`}>
+                                                    <div className={`flex items-center gap-1 mt-1 justify-end ${isMe ? 'text-pink-200' : 'text-gray-600'}`}>
                                                         {msg.is_edited && <span className="text-[8px] italic opacity-80">(editado)</span>}
                                                         <span className="text-[9px]">
                                                             {new Date(msg.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
@@ -466,7 +466,7 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                                                     <button
                                                                         key={emoji}
                                                                         onClick={() => handleReaction(msg, emoji)}
-                                                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border shadow-sm transition-colors ${users.includes(currentUser.id) ? 'bg-pink-900/40 border-pink-500 text-pink-200' : 'bg-stone-800 border-stone-700 text-stone-300'}`}
+                                                                        className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] border shadow-sm transition-colors ${users.includes(currentUser.id) ? 'bg-blue-900/40 border-blue-500 text-blue-200' : 'bg-sky-100 border-sky-300 text-gray-600'}`}
                                                                     >
                                                                         <span>{emoji}</span>
                                                                         <span>{users.length}</span>
@@ -482,7 +482,7 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                                     <div className={`transition-opacity flex items-center gap-1 ${activeMessageId === msg.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setReplyTo(msg); setActiveMessageId(null); }}
-                                                            className="text-stone-500 hover:text-stone-300 p-1.5 bg-stone-800/50 rounded-full"
+                                                            className="text-gray-600 hover:text-gray-600 p-1.5 bg-sky-100/50 rounded-full"
                                                             title="Responder"
                                                         >
                                                             <Reply size={16} />
@@ -490,13 +490,13 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                                         <div className="relative">
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === msg.id ? null : msg.id); }}
-                                                                className="text-stone-500 hover:text-stone-300 p-1.5 bg-stone-800/50 rounded-full"
+                                                                className="text-gray-600 hover:text-gray-600 p-1.5 bg-sky-100/50 rounded-full"
                                                                 title="Reagir"
                                                             >
                                                                 <Smile size={16} />
                                                             </button>
                                                             {showReactionPicker === msg.id && (
-                                                                <div className="absolute bottom-full mb-2 left-0 bg-stone-800 border border-stone-700 rounded-full p-1.5 shadow-2xl flex gap-2 z-20 animate-in fade-in zoom-in duration-200">
+                                                                <div className="absolute bottom-full mb-2 left-0 bg-sky-100 border border-sky-300 rounded-full p-1.5 shadow-2xl flex gap-2 z-20 animate-in fade-in zoom-in duration-200">
                                                                     {COMMON_EMOJIS.map(emoji => (
                                                                         <button
                                                                             key={emoji}
@@ -518,7 +518,7 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                                         {/* Edit Button moved here for consistency */}
                                                         <button
                                                             onClick={(e) => { e.stopPropagation(); setEditingMsgId(msg.id); setEditMsgText(msg.text); setActiveMessageId(null); }}
-                                                            className="text-stone-500 hover:text-stone-300 p-1.5 bg-stone-800/50 rounded-full"
+                                                            className="text-gray-600 hover:text-gray-600 p-1.5 bg-sky-100/50 rounded-full"
                                                             title="Editar"
                                                         >
                                                             <Edit2 size={14} />
@@ -527,13 +527,13 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                                         <div className="relative">
                                                             <button
                                                                 onClick={(e) => { e.stopPropagation(); setShowReactionPicker(showReactionPicker === msg.id ? null : msg.id); }}
-                                                                className="text-stone-500 hover:text-stone-300 p-1.5 bg-stone-800/50 rounded-full"
+                                                                className="text-gray-600 hover:text-gray-600 p-1.5 bg-sky-100/50 rounded-full"
                                                                 title="Reagir"
                                                             >
                                                                 <Smile size={14} />
                                                             </button>
                                                             {showReactionPicker === msg.id && (
-                                                                <div className="absolute bottom-full mb-2 right-0 bg-stone-800 border border-stone-700 rounded-full p-1.5 shadow-2xl flex gap-2 z-20 animate-in fade-in zoom-in duration-200">
+                                                                <div className="absolute bottom-full mb-2 right-0 bg-sky-100 border border-sky-300 rounded-full p-1.5 shadow-2xl flex gap-2 z-20 animate-in fade-in zoom-in duration-200">
                                                                     {COMMON_EMOJIS.map(emoji => (
                                                                         <button
                                                                             key={emoji}
@@ -558,36 +558,36 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                     </div>
 
                     {/* Input Area */}
-                    <div className="p-3 bg-stone-900 border-t border-stone-800 rounded-b-2xl">
+                    <div className="p-3 bg-white border-t border-sky-200 rounded-b-2xl">
                         {/* Reply Preview */}
                         {replyTo && (
-                            <div className="flex items-center justify-between bg-stone-800/80 border-l-4 border-pink-500 p-2 mb-2 rounded-lg animate-in slide-in-from-bottom-2 duration-200">
+                            <div className="flex items-center justify-between bg-sky-50 border-l-4 border-blue-500 p-2 mb-2 rounded-lg animate-in slide-in-from-bottom-2 duration-200">
                                 <div className="overflow-hidden">
-                                    <p className="text-[10px] font-bold text-pink-500">Respondendo a {replyTo.sender_name}</p>
-                                    <p className="text-xs text-stone-400 line-clamp-1">{replyTo.text}</p>
+                                    <p className="text-[10px] font-bold text-blue-700">Respondendo a {replyTo.sender_name}</p>
+                                    <p className="text-xs text-gray-600 line-clamp-1">{replyTo.text}</p>
                                 </div>
-                                <button onClick={() => setReplyTo(null)} className="text-stone-500 hover:text-white p-1">
+                                <button onClick={() => setReplyTo(null)} className="text-gray-600 hover:text-gray-900 p-1">
                                     <X size={14} />
                                 </button>
                             </div>
                         )}
                         {isRecording ? (
-                            <div className="flex items-center justify-between bg-stone-800 border-pink-500 border rounded-full px-4 py-2">
+                            <div className="flex items-center justify-between bg-sky-100 border-pink-500 border rounded-full px-4 py-2">
                                 <span className="text-pink-500 text-sm font-bold flex items-center gap-2 animate-pulse">
                                     <div className="w-2 h-2 rounded-full bg-red-500" />
                                     Gravando... {formatTime(recordingTime)}
                                 </span>
-                                <button onClick={stopRecording} className="text-stone-300 hover:text-white bg-red-500 hover:bg-red-600 p-1.5 rounded-full transition-colors">
+                                <button onClick={stopRecording} className="text-gray-600 hover:text-gray-900 bg-red-500 hover:bg-red-600 p-1.5 rounded-full transition-colors">
                                     <Square size={14} fill="currentColor" />
                                 </button>
                             </div>
                         ) : audioBlob ? (
-                            <div className="flex items-center gap-2 bg-stone-800 rounded-full pl-4 pr-1 py-1">
-                                <span className="text-sm text-stone-300 flex-1">Áudio gravado ({formatTime(recordingTime)})</span>
-                                <button onClick={cancelRecording} className="text-stone-400 hover:text-red-500 p-2 rounded-full transition-colors" title="Descartar">
+                            <div className="flex items-center gap-2 bg-sky-100 rounded-full pl-4 pr-1 py-1">
+                                <span className="text-sm text-gray-600 flex-1">Áudio gravado ({formatTime(recordingTime)})</span>
+                                <button onClick={cancelRecording} className="text-gray-600 hover:text-red-500 p-2 rounded-full transition-colors" title="Descartar">
                                     <Trash2 size={16} />
                                 </button>
-                                <button onClick={handleSendAudio} className="bg-pink-600 hover:bg-pink-500 text-white p-2 rounded-full transition-colors flex items-center justify-center w-8 h-8 flex-shrink-0" title="Enviar áudio">
+                                <button onClick={handleSendAudio} className="bg-blue-600 hover:bg-blue-500 text-gray-900 p-2 rounded-full transition-colors flex items-center justify-center w-8 h-8 flex-shrink-0" title="Enviar áudio">
                                     <Send size={14} className="ml-0.5" />
                                 </button>
                             </div>
@@ -598,12 +598,12 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                     value={newMessage}
                                     onChange={e => setNewMessage(e.target.value)}
                                     placeholder="Digite sua mensagem..."
-                                    className="flex-1 bg-stone-800 border border-stone-700 rounded-full px-4 py-2 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                                    className="flex-1 bg-sky-100 border border-sky-300 rounded-full px-4 py-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500 transition-colors"
                                 />
                                 {newMessage.trim() ? (
                                     <button
                                         type="submit"
-                                        className="bg-pink-600 hover:bg-pink-500 text-white p-2 rounded-full transition-colors flex items-center justify-center w-10 h-10 flex-shrink-0"
+                                        className="bg-blue-600 hover:bg-blue-500 text-gray-900 p-2 rounded-full transition-colors flex items-center justify-center w-10 h-10 flex-shrink-0"
                                     >
                                         <Send size={16} className="ml-0.5" />
                                     </button>
@@ -611,7 +611,7 @@ export const GlobalChat: React.FC<GlobalChatProps> = ({ currentUser, allUsersPro
                                     <button
                                         type="button"
                                         onClick={startRecording}
-                                        className="bg-stone-700 hover:bg-stone-600 text-white p-2 rounded-full transition-colors flex items-center justify-center w-10 h-10 flex-shrink-0 border border-stone-600"
+                                        className="bg-sky-200 hover:bg-sky-200 text-gray-900 p-2 rounded-full transition-colors flex items-center justify-center w-10 h-10 flex-shrink-0 border border-sky-300"
                                         title="Enviar áudio"
                                     >
                                         <Mic size={18} />

@@ -41,6 +41,12 @@ function AppContent() {
   const [activeBanner, setActiveBanner] = useState<EventBanner | null>(null);
   const [studentNotesAvailableColumns, setStudentNotesAvailableColumns] = useState<string[]>([]);
   const [isGeneratingPayments, setIsGeneratingPayments] = useState(false);
+  const [uniformPrices, setUniformPrices] = useState<Record<string, number>>({
+    shirt: 0,
+    pants_roda: 0,
+    pants_train: 0,
+    combo: 0
+  });
 
   const VAPID_PUBLIC_KEY = 'BL5P1s73wlZ-bfXBccIbatEviexmryii1etDhzDuZWHGlcX0RVcZ5YxS25HW2puTXAXaVmjOfkEdaBkcPht_r5U';
 
@@ -122,27 +128,27 @@ function AppContent() {
     } else {
       mappedProfiles = (allProfilesData || []).map(p => ({
         id: p.id,
-        name: `${p.first_name || ''} ${p.last_name || ''}`.trim() || p.nickname || 'Usuário',
+        name: `${p.first_name || p.firstName || ''} ${p.last_name || p.lastName || ''}`.trim() || p.nickname || 'Usuário',
         nickname: p.nickname || undefined,
         email: p.email || '',
         role: p.role as UserRole,
         first_name: p.first_name || undefined,
         last_name: p.last_name || undefined,
         professorName: p.professor_name || undefined,
-        photo_url: p.avatar_url || p.photo_url || undefined, // Unify to favor avatar_url
+        photo_url: p.photo_url || p.avatar_url || p.avatarurl || undefined, // Unify to favor photo_url column from DB
         status: p.status as 'active' | 'blocked' | undefined,
         belt: p.belt || undefined,
         graduationCost: p.graduation_cost ? Number(p.graduation_cost) : 0, // Safe cast
         nextEvaluationDate: p.next_evaluation_date || undefined,
         planning: p.planning || undefined,
         phone: p.phone || undefined,
-        last_seen: p.last_seen || p.updated_at || undefined,
+        last_seen: p.last_seen || p.updated_at || p.updatedat || undefined,
       }));
       setAllUsersProfiles(mappedProfiles);
     }
 
     // Fetch Group Events
-    const { data: eventsData, error: eventsError } = await supabase.from('group_events').select('*');
+    const { data: eventsData, error: eventsError } = await supabase.from('events').select('*');
     if (eventsError) console.error('Error fetching events:', eventsError);
     else setEvents((eventsData || []).filter(ev => ev.status !== 'cancelled'));
 
@@ -159,7 +165,7 @@ function AppContent() {
     else setActiveBanner(bannerData);
 
     // Fetch Music Items
-    const { data: musicData, error: musicError } = await supabase.from('music_items').select('*');
+    const { data: musicData, error: musicError } = await supabase.from('music').select('*');
     if (musicError) console.error('Error fetching music:', musicError);
     else setMusicList(musicData || []);
 
@@ -171,6 +177,15 @@ function AppContent() {
     const { data: uniformData, error: uniformError } = await uniformQuery;
     if (uniformError) console.error('Error fetching uniform orders:', uniformError);
     else setUniformOrders(uniformData || []);
+
+    const { data: uniformPricesData, error: uniformPricesError } = await supabase.from('uniform_prices').select('*');
+    if (!uniformPricesError && uniformPricesData) {
+      const pricesConfig: Record<string, number> = { shirt: 0, pants_roda: 0, pants_train: 0, combo: 0 };
+      uniformPricesData.forEach((row: any) => {
+        pricesConfig[row.item] = row.price;
+      });
+      setUniformPrices(pricesConfig);
+    }
 
     // Fetch Admin Notifications (for all admin users - shows all users' activities)
     if (userRole === 'admin') {
@@ -222,7 +237,7 @@ function AppContent() {
     else setAssignments(assignmentData || []);
 
     // Fetch Monthly Payments (own for student, all for admin)
-    let paymentQuery = supabase.from('monthly_payments').select('*');
+    let paymentQuery = supabase.from('payments').select('*');
     if (userRole === 'aluno') {
       paymentQuery = paymentQuery.eq('student_id', userId);
     }
@@ -260,7 +275,7 @@ function AppContent() {
     if (userRole === 'aluno') {
       const idCandidates = ['student_id', 'user_id', 'aluno_id'];
       for (const col of idCandidates) {
-        const { data, error } = await supabase.from('student_notes').select('*').eq(col, userId);
+        const { data, error } = await supabase.from('student_grades').select('*').eq(col, userId);
         if (!error) {
           const rows = data || [];
           if (rows.length > 0) {
@@ -274,12 +289,12 @@ function AppContent() {
         if (error && code !== '42703' && code !== 'PGRST204') { gradesError = error; break; }
       }
       if (!gradesData && !gradesError) {
-        const { data, error } = await supabase.from('student_notes').select('*');
+        const { data, error } = await supabase.from('student_grades').select('*');
         if (!error) gradesData = (data || []).filter((g: any) => g.student_id === userId || g.user_id === userId || g.aluno_id === userId);
         else gradesError = error;
       }
     } else {
-      const { data, error } = await supabase.from('student_notes').select('*');
+      const { data, error } = await supabase.from('student_grades').select('*');
       gradesData = data || [];
       gradesError = error || null;
     }
@@ -362,7 +377,7 @@ function AppContent() {
     setIsGeneratingPayments(true);
     try {
       const { data: existing, error: checkError } = await supabase
-        .from('monthly_payments')
+        .from('payments')
         .select('id')
         .eq('month', currentMonth)
         .eq('type', 'Mensalidade')
@@ -376,7 +391,7 @@ function AppContent() {
 
       const { data: students, error: studentError } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, nickname')
+        .select('id, first_name, last_name, nickname, status')
         .eq('role', 'aluno');
 
       if (studentError) throw studentError;
@@ -399,7 +414,7 @@ function AppContent() {
           type: 'Mensalidade'
         }));
 
-      const { error: insertError } = await supabase.from('monthly_payments').insert(newPayments);
+      const { error: insertError } = await supabase.from('payments').insert(newPayments);
       if (insertError) throw insertError;
 
       console.log(`Mensalidades de ${currentMonth} geradas automaticamente.`);
@@ -481,7 +496,7 @@ function AppContent() {
             const userRole = profileData.role as UserRole;
             const fetchedUser: User = {
               id: session.user.id,
-              name: profileData.first_name || session.user.email || 'User',
+              name: profileData.first_name || profileData.firstName || session.user.email || 'User',
               nickname: profileData.nickname || undefined,
               email: profileData.email || session.user.email || '',
               role: userRole,
@@ -489,14 +504,14 @@ function AppContent() {
               beltColor: profileData.belt_color || undefined,
               professorName: profileData.professor_name || undefined,
               birthDate: profileData.birth_date || undefined,
-              graduationCost: profileData.graduation_cost !== null ? parseFloat(profileData.graduation_cost.toString()) : 0,
+              graduationCost: profileData.graduation_cost != null ? parseFloat(String(profileData.graduation_cost)) : profileData.graduationcost != null ? parseFloat(String(profileData.graduationcost)) : 0,
               phone: profileData.phone || undefined,
               first_name: profileData.first_name || undefined,
               last_name: profileData.last_name || undefined,
               nextEvaluationDate: profileData.next_evaluation_date || undefined,
-              photo_url: profileData.avatar_url || undefined,
+              photo_url: profileData.photo_url || profileData.avatar_url || profileData.avatarurl || undefined,
               status: profileData.status as 'active' | 'blocked' | undefined,
-              last_seen: profileData.last_seen || undefined,
+              last_seen: profileData.last_seen || profileData.updated_at || profileData.updatedat || undefined,
             };
             setUser(fetchedUser);
             setCurrentView('dashboard');
@@ -543,6 +558,8 @@ function AppContent() {
   const handleLogin = (loggedUser: User) => {
     setUser(loggedUser);
     setCurrentView('dashboard');
+    // Forçar scroll para o topo ao entrar
+    window.scrollTo(0, 0);
   };
 
   const handleLogout = async () => {
@@ -567,12 +584,12 @@ function AppContent() {
           last_name: updatedData.last_name,
           nickname: updatedData.nickname,
           belt: updatedData.belt,
-          belt_color: updatedData.beltColor,
-          professor_name: updatedData.professorName,
-          birth_date: updatedData.birthDate,
+          beltcolor: updatedData.beltColor,
+          professorname: updatedData.professorName,
+          birthdate: updatedData.birthDate,
           phone: updatedData.phone,
           updated_at: new Date().toISOString(),
-          avatar_url: updatedData.photo_url,
+          photo_url: updatedData.photo_url,
         })
         .eq('id', session.user.id);
 
@@ -591,15 +608,15 @@ function AppContent() {
             email: session.user.email || '', // Populated from session.user.email
             role: userRole,
             belt: updatedProfile.belt || undefined,
-            beltColor: updatedProfile.belt_color || undefined,
-            professorName: updatedProfile.professor_name || undefined,
-            birthDate: updatedProfile.birth_date || undefined,
-            graduationCost: updatedProfile.graduation_cost ? parseFloat(updatedProfile.graduation_cost.toString()) : 0,
+            beltColor: updatedProfile.belt_color || updatedProfile.beltcolor || undefined,
+            professorName: updatedProfile.professor_name || updatedProfile.professorname || undefined,
+            birthDate: updatedProfile.birth_date || updatedProfile.birthdate || undefined,
+            graduationCost: updatedProfile.graduation_cost != null ? parseFloat(String(updatedProfile.graduation_cost)) : updatedProfile.graduationcost != null ? parseFloat(String(updatedProfile.graduationcost)) : 0,
             phone: updatedProfile.phone || undefined,
             first_name: updatedProfile.first_name || undefined,
             last_name: updatedProfile.last_name || undefined,
-            nextEvaluationDate: updatedProfile.next_evaluation_date || undefined,
-            photo_url: updatedProfile.avatar_url || undefined,
+            nextEvaluationDate: updatedProfile.next_evaluation_date || updatedProfile.nextevaluationdate || undefined,
+            photo_url: updatedProfile.photo_url || updatedProfile.avatar_url || updatedProfile.avatarurl || undefined,
             status: updatedProfile.status as 'active' | 'blocked' | undefined,
           };
           setUser(fetchedUser);
@@ -616,7 +633,7 @@ function AppContent() {
     if (!session) return null;
     // Safety strip: event_time column doesn't exist in DB
     const { event_time, ...payload } = newEvent as any;
-    const { data, error } = await supabase.from('group_events').insert({ ...payload, created_by: session.user.id }).select().single();
+    const { data, error } = await supabase.from('events').insert({ ...payload, created_by: session.user.id }).select().single();
     if (error) {
       console.error('Error adding event:', error);
       alert('Erro ao criar evento: ' + error.message);
@@ -631,7 +648,7 @@ function AppContent() {
   const handleEditEvent = async (updatedEvent: GroupEvent) => {
     // Safety strip: event_time column doesn't exist in DB
     const { event_time, ...payload } = updatedEvent as any;
-    const { data, error } = await supabase.from('group_events').update(payload).eq('id', updatedEvent.id).select().single();
+    const { data, error } = await supabase.from('events').update(payload).eq('id', updatedEvent.id).select().single();
     if (error) {
       console.error('Error editing event:', error);
       alert('Erro ao editar evento: ' + error.message);
@@ -644,7 +661,7 @@ function AppContent() {
   const handleCancelEvent = async (eventId: string) => {
     // Soft delete: update status to 'cancelled' instead of deleting
     // This preserves event_registrations and financial records
-    const { error } = await supabase.from('group_events').update({ status: 'cancelled' }).eq('id', eventId);
+    const { error } = await supabase.from('events').update({ status: 'cancelled' }).eq('id', eventId);
     if (error) console.error('Error cancelling event:', error);
     else setEvents(prev => prev.map(event => event.id === eventId ? { ...event, status: 'cancelled' } : event));
   };
@@ -696,7 +713,7 @@ function AppContent() {
 
   const handleAddMusic = async (newMusic: Omit<MusicItem, 'id' | 'created_at'>) => {
     if (!session) return;
-    const { data, error } = await supabase.from('music_items').insert({ ...newMusic, created_by: session.user.id }).select().single();
+    const { data, error } = await supabase.from('music').insert({ ...newMusic, created_by: session.user.id }).select().single();
     if (error) {
       console.error('Error adding music:', error);
       throw error; // Throw to let notification handle it
@@ -709,7 +726,7 @@ function AppContent() {
 
   const handleDeleteMusic = async (musicId: string) => {
     if (!session) return;
-    const { error } = await supabase.from('music_items').delete().eq('id', musicId);
+    const { error } = await supabase.from('music').delete().eq('id', musicId);
     if (error) {
       console.error('Error deleting music:', error);
       alert('Erro ao excluir música: ' + error.message);
@@ -728,16 +745,30 @@ function AppContent() {
     }
   };
 
-  const handleUpdateOrderStatus = async (orderId: string, status: 'pending' | 'paid' | 'producing' | 'delivered') => {
+  const handleUpdateOrderStatus = async (orderId: string, status: 'pending' | 'ready' | 'delivered') => {
     const { data, error } = await supabase.from('uniform_orders').update({ status }).eq('id', orderId).select().single();
     if (error) console.error('Error updating order status:', error);
     else setUniformOrders(prev => prev.map(o => o.id === orderId ? data : o));
   };
 
   const handleUpdateOrderWithProof = async (orderId: string, proofUrl: string, proofName: string) => {
-    const { data, error } = await supabase.from('uniform_orders').update({ proof_url: proofUrl, proof_name: proofName, status: 'paid' }).eq('id', orderId).select().single();
+    const { data, error } = await supabase.from('uniform_orders').update({ proof_url: proofUrl, proof_name: proofName }).eq('id', orderId).select().single();
     if (error) console.error('Error updating order with proof:', error);
     else setUniformOrders(prev => prev.map(o => o.id === orderId ? data : o));
+  };
+
+  const handleUpdateUniformPrice = async (item: string, price: number) => {
+    const { error } = await supabase
+      .from('uniform_prices')
+      .upsert({ item, price }, { onConflict: 'item' });
+    if (error) {
+      console.error('Error updating uniform price:', error);
+      alert('Erro ao atualizar preço.');
+    } else {
+      setUniformPrices(prev => ({ ...prev, [item]: price }));
+      alert('Preço atualizado com sucesso!');
+      fetchData();
+    }
   };
 
   const handleAddHomeTraining = async (newTraining: Omit<HomeTraining, 'id' | 'created_at'>) => {
@@ -814,7 +845,7 @@ function AppContent() {
   };
 
   const handleAddPaymentRecord = async (newPayment: Omit<PaymentRecord, 'id' | 'created_at'>) => {
-    const { data, error } = await supabase.from('monthly_payments').insert(newPayment).select().single();
+    const { data, error } = await supabase.from('payments').insert(newPayment).select().single();
     if (error) {
       console.error('Error adding payment record:', error);
       throw error;
@@ -824,7 +855,7 @@ function AppContent() {
   };
 
   const handleUpdatePaymentRecord = async (updatedPayment: PaymentRecord) => {
-    const { data, error } = await supabase.from('monthly_payments').update(updatedPayment).eq('id', updatedPayment.id).select().single();
+    const { data, error } = await supabase.from('payments').update(updatedPayment).eq('id', updatedPayment.id).select().single();
     if (error) {
       console.error('Error updating payment record:', error);
       throw error;
@@ -935,25 +966,14 @@ function AppContent() {
 
   const handleAddAttendance = async (attendanceRecords: any[]) => {
     if (attendanceRecords.length === 0) return;
-    
-    // Deletar chamadas anteriores desta mesma aula (sessão) para evitar duplicatas ao editar
-    const sessionIds = Array.from(new Set(attendanceRecords.map(r => r.session_id)));
-    for (const sessionId of sessionIds) {
-      const { error: deleteError } = await supabase.from('attendance').delete().eq('session_id', sessionId);
-      if (deleteError) {
-        console.error('Error deleting previous attendance for session', sessionId, deleteError);
-      }
-    }
-
-    const { error } = await supabase.from('attendance').insert(attendanceRecords);
+    const { error } = await supabase.from('attendance').upsert(attendanceRecords, { onConflict: 'session_id,student_id' });
     if (error) {
-      console.error('Error adding attendance:', error);
+      console.error('Error adding/updating attendance:', error);
       throw error;
     } else {
       if (user) handleNotifyAdmin(`Realizou chamada para ${attendanceRecords.length} alunos`, user);
     }
   };
-
 
   const handleAddClassRecord = async (record: { photo_url: string; created_by: string; description?: string }) => {
     if (!session) return;
@@ -997,7 +1017,7 @@ function AppContent() {
     let existingCols = studentNotesAvailableColumns;
     if (existingCols.length === 0) {
       try {
-        const { data } = await supabase.from('student_notes').select('*').limit(1);
+        const { data } = await supabase.from('student_grades').select('*').limit(1);
         existingCols = Array.from(new Set((data || []).flatMap((row: any) => Object.keys(row || {}))));
         setStudentNotesAvailableColumns(existingCols);
       } catch (_) { }
@@ -1018,7 +1038,7 @@ function AppContent() {
         category: payload.category
       };
 
-      const { data, error } = await supabase.from('student_notes').insert(attempt).select().single();
+      const { data, error } = await supabase.from('student_grades').insert(attempt).select().single();
       if (!error && data) {
         const normalized: StudentGrade = {
           ...data,
@@ -1076,21 +1096,34 @@ function AppContent() {
     if (isLoading || !isProfileChecked) {
       return (
         <div className="flex justify-center items-center min-h-[calc(100vh-64px)]">
-          <p className="text-white text-xl">Carregando...</p>
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p className="text-blue-300 text-lg font-medium">Carregando...</p>
+          </div>
         </div>
       );
     }
 
-    if (currentView === 'home' && !user) {
-      return <Landing onLoginClick={() => setCurrentView('login')} />;
-    }
-
-    if (currentView === 'login') {
-      return <Auth onLogin={handleLogin} onBack={() => setCurrentView('home')} />;
+    // Se o usuário está autenticado, vai direto pro dashboard (prioridade máxima)
+    if (user && user.role) {
+      // Mas se está em profile_setup, deixa finalizar o setup primeiro
+      if (currentView === 'profile_setup' && session) {
+        return <ProfileSetup onProfileComplete={handleProfileComplete} onBack={() => setCurrentView('home')} />;
+      }
+      // Dashboard é a tela padrão para usuários autenticados
+      // (o bloco abaixo de 'if (user)' vai renderizar)
     }
 
     if (currentView === 'profile_setup' && session) {
       return <ProfileSetup onProfileComplete={handleProfileComplete} onBack={() => setCurrentView('home')} />;
+    }
+
+    if (currentView === 'login' && !user) {
+      return <Auth onLogin={handleLogin} onBack={() => setCurrentView('home')} />;
+    }
+
+    if (!user) {
+      return <Landing onLoginClick={() => setCurrentView('login')} />;
     }
 
     if (user) {
@@ -1121,6 +1154,7 @@ function AppContent() {
               onUpdatePaymentRecord={handleUpdatePaymentRecord}
               studentGrades={studentGrades.filter(g => g.student_id === user.id)}
               onUpdateOrderWithProof={handleUpdateOrderWithProof}
+              uniformPrices={uniformPrices}
             />
           )}
           {user.role === 'professor' && (
@@ -1155,6 +1189,7 @@ function AppContent() {
               onUpdateLessonPlan={handleUpdateLessonPlan}
               onDeleteLessonPlan={handleDeleteLessonPlan}
               onDeleteMusic={handleDeleteMusic}
+              uniformPrices={uniformPrices}
             />
           )}
 
@@ -1203,6 +1238,8 @@ function AppContent() {
               onAddLessonPlan={handleAddLessonPlan}
               onUpdateLessonPlan={handleUpdateLessonPlan}
               onDeleteLessonPlan={handleDeleteLessonPlan}
+              uniformPrices={uniformPrices}
+              onUpdateUniformPrice={handleUpdateUniformPrice}
             />
           )}
         </div>
@@ -1213,7 +1250,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-stone-900 text-stone-200 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
       <Navbar
         user={user}
         onLogout={handleLogout}

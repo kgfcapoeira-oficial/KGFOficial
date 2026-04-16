@@ -178,7 +178,7 @@ export interface UniformOrder {
   shirt_size?: string;
   pants_size?: string;
   total: number;
-  status: 'pending' | 'paid' | 'producing' | 'delivered'; // pending = carrinho, paid = pago, producing = em produção, delivered = entregue
+  status: 'pending' | 'ready' | 'delivered'; // ready = pago/aprovado
   created_at?: string;
   proof_url?: string; // URL do comprovante de pagamento
   proof_name?: string; // Nome do arquivo do comprovante
@@ -208,9 +208,9 @@ export interface EventBanner {
   created_by: string;
 }
 
-// ─── FFPoints System ────────────────────────────────────────────────────────
+// ─── APPoints System ────────────────────────────────────────────────────────
 
-export interface FFTask {
+export interface APTask {
   id: string;
   title: string;
   description: string;
@@ -221,20 +221,20 @@ export interface FFTask {
   created_at?: string;
 }
 
-export type FFTaskCompletionStatus = 'pending' | 'approved' | 'rejected';
+export type APTaskCompletionStatus = 'pending' | 'approved' | 'rejected';
 
-export interface FFTaskCompletion {
+export interface APTaskCompletion {
   id: string;
   task_id: string;
   task_title?: string; // denormalized
   user_id: string;
   user_name?: string; // denormalized
-  status: FFTaskCompletionStatus;
+  status: APTaskCompletionStatus;
   note?: string; // optional user note
   created_at?: string;
 }
 
-export interface FFReward {
+export interface APReward {
   id: string;
   title: string;
   description: string;
@@ -247,40 +247,42 @@ export interface FFReward {
   created_at?: string;
 }
 
-export type FFRedemptionStatus = 'pending' | 'approved' | 'rejected';
+export type APRedemptionStatus = 'pending' | 'approved' | 'rejected';
 
-export interface FFRedemption {
+export interface APRedemption {
   id: string;
   reward_id: string;
   reward_title?: string; // denormalized
   user_id: string;
   user_name?: string; // denormalized
   points_cost: number;
-  status: FFRedemptionStatus;
+  status: APRedemptionStatus;
   created_at?: string;
 }
 
 // All Belts List for Configuration
 export const ALL_BELTS = [
-  "Cordel Cinza",
+  "Pagão",                                               // Sem cordel (nível inicial)
   "Cordel Verde",
-  "Cordel Verde ponta Amarelo",
-  "Cordel Verde ponta Azul",
   "Cordel Verde e Amarelo",
-  "Cordel Verde e Amarelo ponta Verde",
-  "Cordel Verde e Amarelo ponta Amarelo",
-  "Cordel Verde e Amarelo ponta Azul",
   "Cordel Amarelo",
-  "Cordel Amarelo ponta Verde",
-  "Cordel Amarelo ponta Azul",
   "Cordel Amarelo e Azul (Instrutor)",
-  "Cordel Amarelo e Azul ponta Amarelo (Instrutor I)",
-  "Cordel Amarelo e Azul ponta Azul (Instrutor II)",
   "Cordel Azul (Professor)",
-  "Cordel Azul ponta Verde e Amarelo (Professor I)",
   "Cordel Verde, Amarelo, Azul e Branco (Mestrando)",
   "Cordel Verde e Branco (Mestre I)",
   "Cordel Amarelo e Branco (Mestre II)",
   "Cordel Azul e Branco (Mestre III)",
-  "Cordel Branco (Grão-Mestre)"
+  "Cordel Branco (Grão-Mestre)",
+  // --- Desativados (para uso futuro) ---
+  // "Cordel Cinza",
+  // "Cordel Verde ponta Amarelo",
+  // "Cordel Verde ponta Azul",
+  // "Cordel Verde e Amarelo ponta Verde",
+  // "Cordel Verde e Amarelo ponta Amarelo",
+  // "Cordel Verde e Amarelo ponta Azul",
+  // "Cordel Amarelo ponta Verde",
+  // "Cordel Amarelo ponta Azul",
+  // "Cordel Amarelo e Azul ponta Amarelo (Instrutor I)",
+  // "Cordel Amarelo e Azul ponta Azul (Instrutor II)",
+  // "Cordel Azul ponta Verde e Amarelo (Professor I)",
 ];

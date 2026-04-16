@@ -30,11 +30,11 @@ export const BannerPopup: React.FC<BannerPopupProps> = ({ banner }) => {
 
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="relative w-full max-w-4xl bg-stone-900 rounded-2xl overflow-hidden border border-stone-800 shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden border border-sky-200 shadow-2xl animate-in zoom-in-95 duration-300">
                 {/* Header/Close Button */}
                 <button
                     onClick={handleClose}
-                    className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all border border-white/10"
+                    className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-black/70 text-gray-900 rounded-full transition-all border border-white/10"
                     aria-label="Fechar"
                 >
                     <X size={24} />
@@ -43,8 +43,8 @@ export const BannerPopup: React.FC<BannerPopupProps> = ({ banner }) => {
                 {/* Banner Content */}
                 <div className="flex flex-col">
                     {banner.title && (
-                        <div className="p-4 bg-stone-800/50 border-b border-stone-800">
-                            <h2 className="text-xl font-bold text-white text-center">{banner.title}</h2>
+                        <div className="p-4 bg-sky-100/50 border-b border-sky-200">
+                            <h2 className="text-xl font-bold text-gray-900 text-center">{banner.title}</h2>
                         </div>
                     )}
                     <div className="relative aspect-[16/9] md:aspect-[21/9] w-full">
@@ -57,7 +57,7 @@ export const BannerPopup: React.FC<BannerPopupProps> = ({ banner }) => {
                 </div>
 
                 {/* Footer Action (Optional) */}
-                <div className="p-4 bg-stone-950/50 flex justify-center">
+                <div className="p-4 bg-white/50 flex justify-center">
                     <button
                         onClick={handleClose}
                         className="px-8 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-black font-black rounded-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg"

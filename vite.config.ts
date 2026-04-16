@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => {
           type: 'module',
         },
         manifest: {
-          name: 'Filhos do Fogo - Capoeira',
-          short_name: 'Filhos do Fogo',
+          name: 'Anjos da Paz - Capoeira',
+          short_name: 'Anjos da Paz',
           description: 'Humildade, Disciplina e União - Grupo de Capoeira',
           theme_color: '#1c1917',
           background_color: '#1c1917',

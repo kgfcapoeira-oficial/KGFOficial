@@ -189,27 +189,27 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
   if (loading || sessionLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <p className="text-white">Carregando perfil...</p>
+        <p className="text-gray-900">Carregando perfil...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-stone-900 p-4">
-      <div className="w-full max-w-md bg-stone-800 rounded-2xl border border-stone-700">
+    <div className="min-h-screen flex items-center justify-center bg-white p-4">
+      <div className="w-full max-w-md bg-sky-100 rounded-2xl border border-sky-300">
         <div className="bg-gradient-to-r from-orange-600 to-red-600 p-6 text-center relative">
           <button
             onClick={onBack}
-            className="absolute left-4 top-4 text-white"
+            className="absolute left-4 top-4 text-gray-900"
           >
             <ArrowLeft />
           </button>
 
           <Logo className="h-20 w-20 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white">
+          <h2 className="text-xl font-bold text-gray-900">
             {isNewUser ? "Complete seu Perfil" : "Editar Perfil"}
           </h2>
-          <p className="text-white/80 text-sm">
+          <p className="text-gray-900/80 text-sm">
             {isNewUser
               ? "Preencha seus dados para começar"
               : "Atualize suas informações"}
@@ -218,7 +218,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {isNewUser && (
-            <div className="bg-yellow-900/20 border border-yellow-800 text-yellow-400 p-3 rounded flex gap-2 text-sm">
+            <div className="bg-yellow-900/20 border border-yellow-800 text-yellow-700 p-3 rounded flex gap-2 text-sm">
               <AlertCircle size={18} />
               Complete seu cadastro para continuar.
             </div>
@@ -229,7 +229,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
             value={formData.first_name}
             onChange={handleChange}
             placeholder="Nome"
-            className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600"
+            className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300"
             required
           />
 
@@ -238,7 +238,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
             value={formData.last_name}
             onChange={handleChange}
             placeholder="Sobrenome"
-            className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600"
+            className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300"
           />
 
           <input
@@ -246,23 +246,23 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
             value={formData.nickname}
             onChange={handleChange}
             placeholder="Apelido (Capoeira)"
-            className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600"
+            className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300"
           />
 
           <div>
-            <label htmlFor="birth_date" className="block text-sm text-stone-400 mb-1">Data de Nascimento</label>
+            <label htmlFor="birth_date" className="block text-sm text-gray-600 mb-1">Data de Nascimento</label>
             <input
               id="birth_date"
               name="birth_date"
               type="date"
               value={formData.birth_date}
               onChange={handleChange}
-              className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600 [color-scheme:dark]"
+              className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300 [color-scheme:dark]"
             />
           </div>
 
           <div>
-            <label htmlFor="phone" className="block text-sm text-stone-400 mb-1">WhatsApp (Ex: 5511999999999)</label>
+            <label htmlFor="phone" className="block text-sm text-gray-600 mb-1">WhatsApp (Ex: 5511999999999)</label>
             <input
               id="phone"
               name="phone"
@@ -270,18 +270,18 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
               value={formData.phone}
               onChange={handleChange}
               placeholder="55DDDNUMERO"
-              className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600"
+              className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300"
             />
           </div>
 
           <div>
-            <label htmlFor="belt" className="block text-sm text-stone-400 mb-1">Cordel / Graduação</label>
+            <label htmlFor="belt" className="block text-sm text-gray-600 mb-1">Cordel / Graduação</label>
             <select
               id="belt"
               name="belt"
               value={formData.belt}
               onChange={handleChange}
-              className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600"
+              className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300"
             >
               {ALL_BELTS.map((beltOption) => (
                 <option key={beltOption} value={beltOption}>
@@ -293,13 +293,13 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({
 
           {formData.role === 'aluno' && (
             <div>
-              <label htmlFor="professor_name" className="block text-sm text-stone-400 mb-1">Professor Responsável</label>
+              <label htmlFor="professor_name" className="block text-sm text-gray-600 mb-1">Professor Responsável</label>
               <select
                 id="professor_name"
                 name="professor_name"
                 value={formData.professor_name}
                 onChange={handleChange}
-                className="w-full p-2 rounded bg-stone-900 text-white border border-stone-600"
+                className="w-full p-2 rounded bg-white text-gray-900 border border-sky-300"
               >
                 <option value="">Selecione seu professor</option>
                 {availableProfessors.map((prof) => (

@@ -12,7 +12,7 @@ precacheAndRoute(self.__WB_MANIFEST || []);
 self.addEventListener('push', (event) => {
     console.log('[SW] Push received:', event);
 
-    const logoUrl = 'https://i.imgur.com/x4jaXv8.png';
+    const logoUrl = '/logo.png';
     let data = {
         title: 'Nova Mensagem',
         body: 'Você recebeu uma nova mensagem no chat.',
