@@ -1104,21 +1104,13 @@ function AppContent() {
       );
     }
 
-<<<<<<< HEAD
     // Se o usuário está autenticado, vai direto pro dashboard (prioridade máxima)
     if (user && user.role) {
       // Mas se está em profile_setup, deixa finalizar o setup primeiro
       if (currentView === 'profile_setup' && session) {
         return <ProfileSetup onProfileComplete={handleProfileComplete} onBack={() => setCurrentView('home')} />;
       }
-      // Dashboard é a tela padrão para usuários autenticados
-      // (o bloco abaixo de 'if (user)' vai renderizar)
-=======
-    if (currentView === 'home' && !user) {
-      return <Landing onLoginClick={() => setCurrentView('login')} />;
-    }
-
-    if (currentView === 'login') {
+    } else if (currentView === 'login') {
       if (!isSupabaseConfigured) {
         return (
           <div className="min-h-[calc(100vh-64px)] flex items-center justify-center p-4 bg-stone-900">
@@ -1134,9 +1126,8 @@ function AppContent() {
           </div>
         );
       }
-      return <Auth onLogin={handleLogin} onBack={() => setCurrentView('home')} />;
->>>>>>> 63f70139530ee78f474bf1461655596f30eccd02
     }
+
 
     if (currentView === 'profile_setup' && session) {
       return <ProfileSetup onProfileComplete={handleProfileComplete} onBack={() => setCurrentView('home')} />;
