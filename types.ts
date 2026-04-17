@@ -168,9 +168,10 @@ export interface AdminNotification {
   created_at?: string;
 }
 
+
 export interface UniformOrder {
   id: string;
-  user_id: string;
+  user_id: string | null;
   user_name: string;
   user_role: string; // 'aluno' | 'professor'
   date: string;

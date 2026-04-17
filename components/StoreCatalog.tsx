@@ -92,7 +92,7 @@ export const StoreCatalog: React.FC<StoreCatalogProps> = ({
 
       // 2. Prepare order data
       const orderData: Omit<UniformOrder, 'id' | 'created_at'> = {
-        user_id: user?.id || '00000000-0000-0000-0000-000000000000', // Null-safe or guest UUID
+        user_id: user?.id || null, // Correctly handle guests as null
         user_name: user ? (user.nickname || user.name) : `Visitante: ${guestName} (${guestPhone})`,
         user_role: user?.role || 'convidado',
         date: new Date().toLocaleDateString('pt-BR'),

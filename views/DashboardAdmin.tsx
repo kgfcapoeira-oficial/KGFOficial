@@ -1389,7 +1389,7 @@ export const DashboardAdmin: React.FC<Props> = ({
         // Decide bucket based on path
         let bucket = 'payment_proofs';
         if (filePath.includes('event_proofs')) bucket = 'event_proofs';
-        if (filePath.includes('uniform_proofs')) bucket = 'payment_proofs'; // Uniforms use payment_proofs for now
+        if (filePath.includes('uniform_proofs') || filePath.includes('store_proofs')) bucket = 'payment_proofs'; // Uniforms/Store use payment_proofs
 
         try {
             // Generate a signed URL for private buckets
@@ -3555,6 +3555,16 @@ export const DashboardAdmin: React.FC<Props> = ({
                                             </td>
                                             <td className="p-4 text-right">
                                                 <div className="flex justify-end gap-2">
+                                                    {order.proof_url && (
+                                                        <Button
+                                                            variant="outline"
+                                                            className="text-[10px] px-3 py-1.5 h-auto font-black uppercase border-blue-200 text-blue-700 hover:bg-blue-50"
+                                                            onClick={() => handleViewPaymentProof(order.proof_url!, order.proof_name || 'Comprovante')}
+                                                            title="Ver Comprovante"
+                                                        >
+                                                            <Eye size={12} className="mr-1" /> PDF/IMG
+                                                        </Button>
+                                                    )}
                                                     {order.status === 'pending' && (
                                                         <Button
                                                             className="text-[10px] px-3 py-1.5 h-auto font-black uppercase bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-600/20"
