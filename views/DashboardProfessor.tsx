@@ -501,21 +501,6 @@ id,
 
   // Filter my orders - removed duplicate const to keep useState version
 
-  const handleOrderStoreItem = (item: UniformItem) => {
-    const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
-      user_id: user.id,
-      user_name: user.nickname || user.name,
-      user_role: user.role,
-      date: new Date().toLocaleDateString('pt-BR'),
-      item: item.title,
-      total: item.price ?? 0,
-      status: 'pending'
-    };
-
-    onAddOrder(newOrder);
-    onNotifyAdmin(`Professor ${user.nickname || user.name} solicitou item da loja virtual: ${item.title}`, user);
-    alert(item.price == null ? 'Pedido enviado! Valor sob consulta.' : 'Pedido enviado!');
-  };
 
   const getCurrentPrice = () => {
     const customItem = uniformItems.find(item => item.id === orderForm.item);
