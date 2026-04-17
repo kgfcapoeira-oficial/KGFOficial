@@ -1299,7 +1299,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
+    <div className={`min-h-screen text-slate-800 font-sans selection:bg-amber-800 selection:text-amber-50 wood-theme ${user ? `wood-${user.role}` : 'wood-public'}`}>
       <Navbar
         user={user}
         onLogout={handleLogout}

@@ -9,13 +9,14 @@ The app is built as a Progressive Web App (PWA) with offline capabilities, allow
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Visual preference: warm wood-tone palette across the whole app, with distinct wood variants for public pages, admin, professor, and aluno dashboards.
 
 ## System Architecture
 
 ### Frontend Framework
 - **React 18** with TypeScript for type-safe component development
 - **Vite** as the build tool for fast development and optimized production builds
-- **Tailwind CSS** for utility-first styling with a custom dark theme (stone/orange color palette)
+- **Tailwind CSS** for utility-first styling with a global wood-tone theme layer and role-specific palette variables
 
 ### Routing Strategy
 - Custom state-based routing managed in `App.tsx` using `currentView` state
