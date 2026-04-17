@@ -463,14 +463,34 @@ select {
 .wood-theme .bg-blue-500,
 .wood-theme .bg-blue-600,
 .wood-theme .bg-blue-700,
+.wood-theme .bg-blue-800,
+.wood-theme .bg-blue-900,
 .wood-theme .bg-sky-500,
 .wood-theme .bg-sky-600,
+.wood-theme .bg-sky-700,
+.wood-theme .bg-sky-800,
+.wood-theme .bg-sky-900,
 .wood-theme .bg-emerald-500,
 .wood-theme .bg-emerald-600,
+.wood-theme .bg-emerald-700,
+.wood-theme .bg-emerald-800,
+.wood-theme .bg-emerald-900,
 .wood-theme .bg-orange-500,
 .wood-theme .bg-yellow-500,
 .wood-theme .bg-indigo-500,
-.wood-theme .bg-purple-500 {
+.wood-theme .bg-indigo-700,
+.wood-theme .bg-indigo-800,
+.wood-theme .bg-indigo-900,
+.wood-theme .bg-purple-500,
+.wood-theme .bg-purple-700,
+.wood-theme .bg-purple-800,
+.wood-theme .bg-purple-900,
+.wood-theme .bg-cyan-700,
+.wood-theme .bg-cyan-800,
+.wood-theme .bg-cyan-900,
+.wood-theme .bg-amber-700,
+.wood-theme .bg-amber-800,
+.wood-theme .bg-amber-900 {
   background-color: var(--wood-primary) !important;
 }
 
@@ -501,7 +521,13 @@ select {
 .wood-theme .text-yellow-500,
 .wood-theme .text-yellow-600,
 .wood-theme .text-indigo-500,
-.wood-theme .text-purple-500 {
+.wood-theme .text-purple-500,
+.wood-theme .text-cyan-500,
+.wood-theme .text-cyan-600,
+.wood-theme .text-cyan-700,
+.wood-theme .text-amber-500,
+.wood-theme .text-amber-600,
+.wood-theme .text-amber-700 {
   color: var(--wood-primary) !important;
 }
 
@@ -518,7 +544,14 @@ select {
 .wood-theme .border-yellow-500\/50,
 .wood-theme .border-emerald-200,
 .wood-theme .border-indigo-200,
-.wood-theme .border-purple-200 {
+.wood-theme .border-purple-200,
+.wood-theme .border-cyan-500\/30,
+.wood-theme .border-indigo-500\/30,
+.wood-theme .border-purple-500\/30,
+.wood-theme .border-emerald-500\/30,
+.wood-theme .border-amber-500\/30,
+.wood-theme .border-blue-600\/30,
+.wood-theme .border-blue-700\/40 {
   border-color: var(--wood-border-soft) !important;
 }
 
@@ -527,7 +560,9 @@ select {
 .wood-theme .border-emerald-500,
 .wood-theme .border-yellow-500,
 .wood-theme .border-indigo-500,
-.wood-theme .border-purple-500 {
+.wood-theme .border-purple-500,
+.wood-theme .border-cyan-500,
+.wood-theme .border-amber-500 {
   border-color: var(--wood-primary) !important;
 }
 
@@ -539,7 +574,22 @@ select {
 
 .wood-theme .from-blue-700,
 .wood-theme .from-blue-600,
+.wood-theme .from-blue-900,
+.wood-theme .from-blue-800,
 .wood-theme .from-sky-600,
+.wood-theme .from-sky-500,
+.wood-theme .from-sky-400,
+.wood-theme .from-indigo-900,
+.wood-theme .from-indigo-800,
+.wood-theme .from-cyan-900,
+.wood-theme .from-cyan-800,
+.wood-theme .from-purple-900,
+.wood-theme .from-purple-800,
+.wood-theme .from-emerald-900,
+.wood-theme .from-emerald-800,
+.wood-theme .from-amber-900,
+.wood-theme .from-amber-800,
+.wood-theme .from-pink-600,
 .wood-theme .from-orange-500,
 .wood-theme .from-yellow-600,
 .wood-theme .from-emerald-600 {
@@ -550,20 +600,60 @@ select {
 
 .wood-theme .via-sky-500,
 .wood-theme .via-blue-800,
+.wood-theme .via-blue-900,
+.wood-theme .via-purple-600,
 .wood-theme .via-white,
 .wood-theme .via-slate-950\/80 {
   --tw-gradient-to: color-mix(in srgb, var(--wood-secondary) 0%, transparent) var(--tw-gradient-to-position) !important;
   --tw-gradient-stops: var(--tw-gradient-from), var(--wood-secondary) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
 }
 
+.wood-theme .to-white,
+.wood-theme .to-slate-700,
+.wood-theme .to-stone-700,
+.wood-theme .to-stone-600,
 .wood-theme .to-blue-700,
 .wood-theme .to-blue-600,
 .wood-theme .to-blue-500,
+.wood-theme .to-indigo-700,
+.wood-theme .to-indigo-600,
+.wood-theme .to-cyan-700,
+.wood-theme .to-cyan-600,
+.wood-theme .to-purple-700,
+.wood-theme .to-purple-600,
+.wood-theme .to-emerald-700,
+.wood-theme .to-emerald-600,
+.wood-theme .to-amber-700,
+.wood-theme .to-amber-600,
 .wood-theme .to-sky-50,
 .wood-theme .to-sky-100,
 .wood-theme .to-yellow-500,
+.wood-theme .to-orange-500,
 .wood-theme .to-emerald-500 {
   --tw-gradient-to: var(--wood-accent) var(--tw-gradient-to-position) !important;
+}
+
+.wood-theme .hover\:from-blue-800:hover,
+.wood-theme .hover\:from-indigo-800:hover,
+.wood-theme .hover\:from-cyan-800:hover,
+.wood-theme .hover\:from-purple-800:hover,
+.wood-theme .hover\:from-emerald-800:hover,
+.wood-theme .hover\:from-amber-800:hover,
+.wood-theme .hover\:from-sky-100:hover {
+  --tw-gradient-from: var(--wood-primary-hover) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: color-mix(in srgb, var(--wood-primary-hover) 0%, transparent) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.wood-theme .hover\:to-blue-600:hover,
+.wood-theme .hover\:to-indigo-600:hover,
+.wood-theme .hover\:to-cyan-600:hover,
+.wood-theme .hover\:to-purple-600:hover,
+.wood-theme .hover\:to-emerald-600:hover,
+.wood-theme .hover\:to-amber-600:hover,
+.wood-theme .hover\:to-slate-700:hover,
+.wood-theme .hover\:to-stone-600:hover {
+  --tw-gradient-to: var(--wood-accent-2) var(--tw-gradient-to-position) !important;
 }
 
 .wood-theme .hover\:bg-sky-100:hover,
