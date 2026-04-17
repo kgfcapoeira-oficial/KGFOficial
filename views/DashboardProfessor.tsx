@@ -84,7 +84,7 @@ interface AssignmentFormState {
   file: File | null; // Added for attachments
 }
 
-type ProfessorViewMode = 'dashboard' | 'attendance' | 'new_class' | 'all_students' | 'evaluate' | 'assignments' | 'uniform' | 'music_manager' | 'grades' | 'financial' | 'planning' | 'appoints';
+type ProfessorViewMode = 'dashboard' | 'attendance' | 'new_class' | 'all_students' | 'evaluate' | 'assignments' | 'uniform' | 'store' | 'music_manager' | 'grades' | 'financial' | 'planning' | 'appoints';
 
 
 
@@ -1042,6 +1042,21 @@ id,
     onNotifyAdmin(`${user.role === 'admin' ? 'Admin' : 'Professor'} solicitou uniforme: ${itemName}`, user);
     alert('Pedido registrado!');
     setOrderForm({ item: 'combo', shirtSize: '', pantsSize: '' });
+  };
+
+  const handleOrderStoreItem = (item: UniformItem) => {
+    const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
+      user_id: user.id,
+      user_name: user.nickname || user.name,
+      user_role: user.role,
+      date: new Date().toLocaleDateString('pt-BR'),
+      item: item.title,
+      total: item.price ?? 0,
+      status: 'pending'
+    };
+    onAddOrder(newOrder as UniformOrder);
+    onNotifyAdmin(`${user.role === 'admin' ? 'Admin' : 'Professor'} solicitou item da loja virtual: ${item.title}`, user);
+    alert(item.price == null ? 'Pedido registrado! Valor sob consulta.' : 'Pedido registrado!');
   };
 
   const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2133,20 +2148,8 @@ id,
                     <option value="shirt">{t('prof.uniform.item_shirt')}</option>
                     <option value="pants_roda">{t('prof.uniform.item_pants_roda')}</option>
                     <option value="pants_train">{t('prof.uniform.item_pants_train')}</option>
-                    {uniformItems.map(item => (
-                      <option key={item.id} value={item.id}>{item.title}</option>
-                    ))}
                   </select>
                 </div>
-                {selectedCustomUniformItem && (
-                  <div className="bg-sky-50 border border-sky-200 rounded-xl overflow-hidden">
-                    <img src={selectedCustomUniformItem.image_url} alt={selectedCustomUniformItem.title} className="w-full h-44 object-cover" />
-                    <div className="p-3">
-                      <p className="font-bold text-gray-900">{selectedCustomUniformItem.title}</p>
-                      {selectedCustomUniformItem.description && <p className="text-sm text-gray-600">{selectedCustomUniformItem.description}</p>}
-                    </div>
-                  </div>
-                )}
                 <div className="grid grid-cols-2 gap-4">
                   {(orderForm.item === 'shirt' || orderForm.item === 'combo') && (
                     <div>
@@ -2179,7 +2182,7 @@ id,
                 </div>
                 <div className="flex justify-between items-center bg-sky-100 p-4 rounded-xl border border-sky-300 mt-2">
                   <span className="text-gray-600 text-sm font-bold">{t('prof.uniform.total_pay')}</span>
-                  <span className="text-xl font-black text-gray-900">{selectedCustomUniformItem ? (selectedCustomUniformItem.price == null ? 'Sob consulta' : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`) : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`}</span>
+                  <span className="text-xl font-black text-gray-900">R$ {getCurrentPrice().toFixed(2).replace('.', ',')}</span>
                 </div>
                 <Button fullWidth type="submit" className="h-12 bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20">
                   <ShoppingBag size={18} className="mr-2" /> {t('prof.uniform.submit')}
@@ -2254,6 +2257,47 @@ id,
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {profView === 'store' && (
+        <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 animate-fade-in">
+          <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setProfView('dashboard')}>
+            <ArrowLeft size={16} className="mr-2" />
+            {t('common.back_panel')}
+          </Button>
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div>
+              <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                <ShoppingBag className="text-amber-600" /> Nossa Loja Virtual
+              </h3>
+              <p className="text-sm text-gray-600">Itens especiais e personalizados do grupo.</p>
+            </div>
+            <span className="text-[10px] font-black bg-white border border-sky-200 px-3 py-1 rounded-full text-gray-600">{uniformItems.length} ITENS</span>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {uniformItems.length > 0 ? (
+              uniformItems.map(item => (
+                <div key={item.id} className="bg-white rounded-2xl border border-sky-200 overflow-hidden shadow-sm">
+                  <img src={item.image_url} alt={item.title} className="w-full h-44 object-cover bg-sky-100" />
+                  <div className="p-4 space-y-3">
+                    <div>
+                      <h4 className="font-black text-gray-900">{item.title}</h4>
+                      <p className="text-sm font-bold text-emerald-700">{item.price != null ? `R$ ${Number(item.price).toFixed(2).replace('.', ',')}` : 'Sob consulta'}</p>
+                    </div>
+                    {item.description && <p className="text-gray-600 text-sm line-clamp-3">{item.description}</p>}
+                    <Button fullWidth onClick={() => handleOrderStoreItem(item)}>
+                      <ShoppingBag size={16} className="mr-2" /> Pedir este item
+                    </Button>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="sm:col-span-2 lg:col-span-3 py-16 bg-white rounded-2xl border-2 border-dashed border-sky-300 text-center text-gray-600 font-bold">
+                Nenhum item cadastrado ainda.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -2569,6 +2613,11 @@ id,
                 <Shirt size={28} className="text-emerald-300" />
                 <span className="text-sm font-bold">{t('prof.action.uniform')}</span>
                 <span className="text-xs text-emerald-200">{t('prof.action.uniform_sub')}</span>
+              </Button>
+              <Button onClick={() => setProfView('store')} className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-amber-900 to-amber-700 hover:from-amber-800 hover:to-amber-600 border border-amber-500/30">
+                <ShoppingBag size={28} className="text-amber-300" />
+                <span className="text-sm font-bold">Nossa Loja Virtual</span>
+                <span className="text-xs text-amber-200">Catálogo</span>
               </Button>
               <Button onClick={() => setProfView('financial')} className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-sky-50 to-stone-700 hover:from-sky-100 hover:to-stone-600 border border-stone-500/30">
                 <Wallet size={28} className="text-gray-600" />

@@ -43,7 +43,7 @@ Visual preference: warm wood-tone palette across the whole app, with distinct wo
 ### Data Models
 - TypeScript interfaces defined in `types.ts` at root level
 - Key entities: User, ClassSession, GroupEvent, Assignment, PaymentRecord, UniformOrder, UniformItem, StudentGrade, MusicItem, HomeTraining, SchoolReport, EventRegistration
-- Uniform/Orders now supports admin-managed custom catalog items through `uniform_items` with photo URL, title, description, nullable price, creator, and created timestamp. Item photos are uploaded into the public Supabase `materials` bucket under `uniform-items/`.
+- Uniform/Orders keeps the original simple uniform request flow for combo, shirt, and pants. The admin-managed custom catalog now lives separately as "Nossa Loja Virtual" in the role dashboards, backed by `uniform_items` with photo URL, title, description, nullable price, creator, and created timestamp. Item photos are uploaded into the public Supabase `materials` bucket under `uniform-items/`.
 - FFPoints system: FFTask, FFTaskCompletion, FFReward, FFRedemption
 
 ### FFPoints Rewards System

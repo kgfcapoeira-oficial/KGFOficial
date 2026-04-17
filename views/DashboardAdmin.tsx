@@ -74,7 +74,7 @@ interface Props {
 
 
 type Tab = 'overview' | 'events' | 'finance' | 'pedagogy' | 'my_classes' | 'class_monitoring' | 'users' | 'student_details' | 'grades' | 'reports' | 'music' | 'banner' | 'appoints';
-type ProfessorViewMode = 'dashboard' | 'attendance' | 'new_class' | 'all_students' | 'evaluate' | 'assignments' | 'uniform' | 'music_manager' | 'financial' | 'planning';
+type ProfessorViewMode = 'dashboard' | 'attendance' | 'new_class' | 'all_students' | 'evaluate' | 'assignments' | 'uniform' | 'store' | 'music_manager' | 'financial' | 'planning';
 
 
 
@@ -2432,6 +2432,21 @@ export const DashboardAdmin: React.FC<Props> = ({
         onNotifyAdmin(`${user.role === 'admin' ? 'Admin' : 'Professor'} solicitou uniforme: ${itemName}`, user);
         alert('Pedido registrado!');
         setOrderForm({ item: 'combo', shirtSize: '', pantsSize: '' });
+    };
+
+    const handleOrderStoreItem = (item: UniformItem) => {
+        const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
+            user_id: user.id,
+            user_name: user.nickname || user.name,
+            user_role: user.role,
+            date: new Date().toLocaleDateString('pt-BR'),
+            item: item.title,
+            total: item.price ?? 0,
+            status: 'pending'
+        };
+        onAddOrder(newOrder);
+        onNotifyAdmin(`${user.role === 'admin' ? 'Admin' : 'Professor'} solicitou item da loja virtual: ${item.title}`, user);
+        alert(item.price == null ? 'Pedido registrado! Valor sob consulta.' : 'Pedido registrado!');
     };
 
     const handleSubmitUniformItem = async (e: React.FormEvent) => {
@@ -5283,9 +5298,6 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                         <option value="shirt">Blusa Oficial</option>
                                                         <option value="pants_roda">Calça de Roda</option>
                                                         <option value="pants_train">Calça de Treino</option>
-                                                        {uniformItems.map(item => (
-                                                            <option key={item.id} value={item.id}>{item.title}</option>
-                                                        ))}
                                                     </select>
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
@@ -5321,7 +5333,7 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                 <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-sky-200 mt-2">
                                                     <span className="text-gray-600 text-sm font-bold">Total a pagar:</span>
                                                     <span className="text-xl font-black text-gray-900">
-                                                        {getSelectedUniformItem() ? (getSelectedUniformItem()?.price == null ? 'Sob consulta' : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`) : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`}
+                                                        R$ {getCurrentPrice().toFixed(2).replace('.', ',')}
                                                     </span>
                                                 </div>
                                                 <Button fullWidth type="submit" className="h-12 bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20">
@@ -5396,7 +5408,27 @@ export const DashboardAdmin: React.FC<Props> = ({
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="mt-8 grid lg:grid-cols-5 gap-8 border-t border-sky-200 pt-8">
+                                </div>
+                            )
+                        }
+
+                        {
+                            profView === 'store' && (
+                                <div className="bg-white rounded-xl p-6 border border-sky-200 animate-fade-in">
+                                    <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setProfView('dashboard')}>
+                                        <ArrowLeft size={16} className="mr-2" />
+                                        Voltar ao Painel
+                                    </Button>
+                                    <div className="flex items-center justify-between gap-4 mb-6">
+                                        <div>
+                                            <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                                                <ShoppingBag className="text-amber-600" /> Nossa Loja Virtual
+                                            </h3>
+                                            <p className="text-sm text-gray-600">Cadastre, visualize e solicite os itens especiais do grupo.</p>
+                                        </div>
+                                        <span className="text-[10px] font-black bg-sky-100 border border-sky-200 px-3 py-1 rounded-full text-gray-600">{uniformItems.length} ITENS</span>
+                                    </div>
+                                    <div className="grid lg:grid-cols-5 gap-8">
                                         <div className="lg:col-span-2 bg-sky-50 p-6 rounded-2xl border border-sky-200">
                                             <h3 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
                                                 <Package className="text-orange-500" /> Cadastrar Item
@@ -5424,18 +5456,12 @@ export const DashboardAdmin: React.FC<Props> = ({
                                             </form>
                                         </div>
                                         <div className="lg:col-span-3">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                                                    <Archive className="text-orange-500" /> Itens Cadastrados
-                                                </h3>
-                                                <span className="text-[10px] font-black bg-sky-100 border border-sky-200 px-3 py-1 rounded-full text-gray-600">{uniformItems.length} ITENS</span>
-                                            </div>
-                                            <div className="grid sm:grid-cols-2 gap-4 max-h-[560px] overflow-y-auto pr-2">
+                                            <div className="grid sm:grid-cols-2 gap-4 max-h-[640px] overflow-y-auto pr-2">
                                                 {uniformItems.length > 0 ? (
                                                     uniformItems.map(item => (
                                                         <div key={item.id} className="bg-white rounded-2xl border border-sky-200 overflow-hidden shadow-sm">
                                                             <img src={item.image_url} alt={item.title} className="w-full h-40 object-cover bg-sky-100" />
-                                                            <div className="p-4">
+                                                            <div className="p-4 space-y-3">
                                                                 <div className="flex justify-between gap-3">
                                                                     <div>
                                                                         <h4 className="font-black text-gray-900">{item.title}</h4>
@@ -5445,7 +5471,10 @@ export const DashboardAdmin: React.FC<Props> = ({
                                                                         <Trash2 size={18} />
                                                                     </button>
                                                                 </div>
-                                                                {item.description && <p className="text-gray-600 text-sm mt-3 line-clamp-3">{item.description}</p>}
+                                                                {item.description && <p className="text-gray-600 text-sm line-clamp-3">{item.description}</p>}
+                                                                <Button fullWidth onClick={() => handleOrderStoreItem(item)}>
+                                                                    <ShoppingBag size={16} className="mr-2" /> Pedir este item
+                                                                </Button>
                                                             </div>
                                                         </div>
                                                     ))
@@ -6159,6 +6188,11 @@ export const DashboardAdmin: React.FC<Props> = ({
                                             <Shirt size={28} className="text-emerald-300" />
                                             <span className="text-sm font-bold">Uniforme</span>
                                             <span className="text-xs text-emerald-200">Pedidos</span>
+                                        </Button>
+                                        <Button onClick={() => setProfView('store')} className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-amber-900 to-amber-700 hover:from-amber-800 hover:to-amber-600 border border-amber-500/30">
+                                            <ShoppingBag size={28} className="text-amber-300" />
+                                            <span className="text-sm font-bold">Nossa Loja Virtual</span>
+                                            <span className="text-xs text-amber-200">Catálogo</span>
                                         </Button>
                                         <Button onClick={() => setProfView('financial')} className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-sky-50 to-sky-100 hover:from-sky-100 hover:to-slate-700 border border-blue-500/30">
                                             <Wallet size={28} className="text-gray-600" />

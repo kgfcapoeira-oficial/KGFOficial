@@ -143,7 +143,7 @@ const convertToStandardImage = async (file: File): Promise<File> => {
 };
 
 
-type MainTab = 'overview' | 'finance_resources' | 'grades' | 'assignments' | 'music' | 'home_training' | 'school_report' | 'uniform' | 'appoints'; // Main tabs for student dashboard
+type MainTab = 'overview' | 'finance_resources' | 'grades' | 'assignments' | 'music' | 'home_training' | 'school_report' | 'uniform' | 'store' | 'appoints'; // Main tabs for student dashboard
 
 
 
@@ -715,6 +715,22 @@ export const DashboardAluno: React.FC<Props> = ({
 
     alert(t('aluno.uniform.success', { price }));
     setOrderForm({ item: 'combo', shirtSize: '', pantsSize: '' });
+  };
+
+  const handleOrderStoreItem = (item: UniformItem) => {
+    const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
+      user_id: user.id,
+      user_name: user.nickname || user.name,
+      user_role: user.role,
+      date: new Date().toLocaleDateString('pt-BR'),
+      item: item.title,
+      total: item.price ?? 0,
+      status: 'pending'
+    };
+
+    onAddOrder(newOrder);
+    onNotifyAdmin(`Aluno ${user.nickname || user.name} solicitou item da loja virtual: ${item.title}`, user);
+    alert(item.price == null ? 'Pedido enviado! Valor sob consulta.' : 'Pedido enviado!');
   };
 
   // Helper to get current price for display
@@ -1359,6 +1375,20 @@ export const DashboardAluno: React.FC<Props> = ({
                       {user.nextEvaluationDate ? new Date(user.nextEvaluationDate).toLocaleDateString('pt-BR') : t('aluno.overview.to_be_defined')}
                     </p>
                     <p className="text-[10px] text-gray-600 mt-1">{t('aluno.overview.eval_date')}</p>
+                  </div>
+
+                  <div
+                    onClick={() => setActiveMainTab('store')}
+                    className="bg-sky-50/50 p-4 rounded-xl border border-sky-300 hover:border-amber-500/50 transition-all cursor-pointer group sm:col-span-3"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-2 bg-amber-500/10 rounded-lg text-amber-600">
+                        <ShoppingBag size={20} />
+                      </div>
+                      <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Nossa Loja Virtual</span>
+                    </div>
+                    <p className="text-sm font-bold text-gray-900">Veja os itens personalizados cadastrados para o grupo.</p>
+                    <p className="text-[10px] text-gray-600 mt-1">{uniformItems.length} itens disponíveis</p>
                   </div>
                 </div>
               </div>
@@ -2098,20 +2128,8 @@ export const DashboardAluno: React.FC<Props> = ({
                       <option value="shirt">Blusa Oficial</option>
                       <option value="pants_roda">Calça de Roda</option>
                       <option value="pants_train">Calça de Treino</option>
-                      {uniformItems.map(item => (
-                        <option key={item.id} value={item.id}>{item.title}</option>
-                      ))}
                     </select>
                   </div>
-                  {selectedCustomUniformItem && (
-                    <div className="bg-sky-50 border border-sky-200 rounded-xl overflow-hidden">
-                      <img src={selectedCustomUniformItem.image_url} alt={selectedCustomUniformItem.title} className="w-full h-44 object-cover" />
-                      <div className="p-3">
-                        <p className="font-bold text-gray-900">{selectedCustomUniformItem.title}</p>
-                        {selectedCustomUniformItem.description && <p className="text-sm text-gray-600">{selectedCustomUniformItem.description}</p>}
-                      </div>
-                    </div>
-                  )}
                   <div className="grid grid-cols-2 gap-4">
                     {(orderForm.item === 'shirt' || orderForm.item === 'combo') && (
                       <div>
@@ -2143,7 +2161,7 @@ export const DashboardAluno: React.FC<Props> = ({
                     )}
                   </div>
                   <div className="text-right text-gray-900 font-bold text-lg">
-                    Total: {selectedCustomUniformItem ? (selectedCustomUniformItem.price == null ? 'Sob consulta' : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`) : `R$ ${getCurrentPrice().toFixed(2).replace('.', ',')}`}
+                    Total: R$ {getCurrentPrice().toFixed(2).replace('.', ',')}
                   </div>
                   <Button fullWidth type="submit">
                     <ShoppingBag size={18} className="mr-1" /> Fazer Pedido
@@ -2220,6 +2238,47 @@ export const DashboardAluno: React.FC<Props> = ({
                   ))
                 ) : (
                   <p className="text-gray-600 italic text-center py-4">Nenhum pedido de uniforme realizado ainda.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeMainTab === 'store' && (
+            <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 animate-fade-in">
+              <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
+                <ArrowLeft size={16} className="mr-2" />
+                Voltar ao Painel
+              </Button>
+              <div className="flex items-center justify-between gap-4 mb-6">
+                <div>
+                  <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
+                    <ShoppingBag className="text-amber-600" /> Nossa Loja Virtual
+                  </h3>
+                  <p className="text-sm text-gray-600">Itens especiais e personalizados do grupo.</p>
+                </div>
+                <span className="text-[10px] font-black bg-white border border-sky-200 px-3 py-1 rounded-full text-gray-600">{uniformItems.length} ITENS</span>
+              </div>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {uniformItems.length > 0 ? (
+                  uniformItems.map(item => (
+                    <div key={item.id} className="bg-white rounded-2xl border border-sky-200 overflow-hidden shadow-sm">
+                      <img src={item.image_url} alt={item.title} className="w-full h-44 object-cover bg-sky-100" />
+                      <div className="p-4 space-y-3">
+                        <div>
+                          <h4 className="font-black text-gray-900">{item.title}</h4>
+                          <p className="text-sm font-bold text-emerald-700">{item.price != null ? `R$ ${Number(item.price).toFixed(2).replace('.', ',')}` : 'Sob consulta'}</p>
+                        </div>
+                        {item.description && <p className="text-gray-600 text-sm line-clamp-3">{item.description}</p>}
+                        <Button fullWidth onClick={() => handleOrderStoreItem(item)}>
+                          <ShoppingBag size={16} className="mr-2" /> Pedir este item
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="sm:col-span-2 lg:col-span-3 py-16 bg-white rounded-2xl border-2 border-dashed border-sky-300 text-center text-gray-600 font-bold">
+                    Nenhum item cadastrado ainda.
+                  </div>
                 )}
               </div>
             </div>
