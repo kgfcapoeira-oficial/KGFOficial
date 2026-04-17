@@ -2249,6 +2249,9 @@ export const DashboardAluno: React.FC<Props> = ({
               items={uniformItems} 
               prices={uniformPrices}
               onBack={() => setActiveMainTab('overview')}
+              user={user}
+              onAddOrder={onAddOrder}
+              onNotifyAdmin={onNotifyAdmin}
             />
           )}
 

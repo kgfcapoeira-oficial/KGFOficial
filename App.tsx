@@ -1185,6 +1185,9 @@ function AppContent() {
             prices={uniformPrices} 
             onBack={() => setCurrentView('home')} 
             isPublic={true}
+            user={user}
+            onAddOrder={handleAddOrder}
+            onNotifyAdmin={handleNotifyAdmin}
           />
         </div>
       );

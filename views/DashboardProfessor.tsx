@@ -2563,6 +2563,9 @@ id,
             items={uniformItems} 
             prices={uniformPrices}
             onBack={() => setProfView('dashboard')}
+            user={user}
+            onAddOrder={onAddOrder}
+            onNotifyAdmin={onNotifyAdmin}
           />
         </div>
       )}
