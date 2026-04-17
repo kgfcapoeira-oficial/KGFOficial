@@ -1,14 +1,15 @@
 import React from 'react';
 import { Button } from '../components/Button';
-import { Users, Calendar, MapPin, Instagram } from 'lucide-react';
+import { Users, Calendar, MapPin, Instagram, ShoppingBag } from 'lucide-react';
 import { Logo } from '../components/Logo';
 import { useLanguage } from '../src/i18n/LanguageContext';
 
 interface Props {
   onLoginClick: () => void;
+  onOpenStore: () => void;
 }
 
-export const Landing: React.FC<Props> = ({ onLoginClick }) => {
+export const Landing: React.FC<Props> = ({ onLoginClick, onOpenStore }) => {
   const { t } = useLanguage();
 
   return (
@@ -41,6 +42,11 @@ export const Landing: React.FC<Props> = ({ onLoginClick }) => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center w-full sm:w-auto">
             <Button onClick={onLoginClick} className="text-lg px-8 py-4 w-full sm:w-auto shadow-blue-900/50 bg-gradient-to-r from-blue-700 to-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.4)]">
               {t('landing.cta')}
+            </Button>
+
+            <Button onClick={onOpenStore} variant="outline" className="text-lg px-8 py-4 w-full sm:w-auto flex items-center justify-center gap-2 border-amber-600/50 text-amber-700 hover:bg-amber-600 hover:text-white transition-all duration-300">
+              <ShoppingBag size={24} />
+              Nossa Loja Virtual
             </Button>
             
             <a 

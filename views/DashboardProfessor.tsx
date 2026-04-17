@@ -10,6 +10,7 @@ const pixPayload = generatePixPayload('b6da3596-0aec-41ce-b118-47e4757a24d6', 'A
 
 import { Users, CalendarCheck, PlusCircle, Copy, Check, ArrowLeft, Save, X, UploadCloud, BookOpen, Paperclip, Calendar, Wallet, Info, Shirt, ShoppingBag, Music, Mic2, MessageCircle, AlertTriangle, Video, Clock, Camera, UserPlus, Shield, Award, GraduationCap, PlayCircle, FileUp, Eye, DollarSign, FileText, Ticket, Trash2, Activity, Instagram, ChevronDown, ChevronUp, CheckCircle, Edit2, Star } from 'lucide-react';
 import { Button } from '../components/Button';
+import { StoreCatalog } from '../components/StoreCatalog';
 import { supabase } from '../src/integrations/supabase/client'; // Import supabase client
 import { Logo } from '../components/Logo'; // Import Logo component
 
@@ -499,6 +500,22 @@ id,
 
 
   // Filter my orders - removed duplicate const to keep useState version
+
+  const handleOrderStoreItem = (item: UniformItem) => {
+    const newOrder: Omit<UniformOrder, 'id' | 'created_at'> = {
+      user_id: user.id,
+      user_name: user.nickname || user.name,
+      user_role: user.role,
+      date: new Date().toLocaleDateString('pt-BR'),
+      item: item.title,
+      total: item.price ?? 0,
+      status: 'pending'
+    };
+
+    onAddOrder(newOrder);
+    onNotifyAdmin(`Professor ${user.nickname || user.name} solicitou item da loja virtual: ${item.title}`, user);
+    alert(item.price == null ? 'Pedido enviado! Valor sob consulta.' : 'Pedido enviado!');
+  };
 
   const getCurrentPrice = () => {
     const customItem = uniformItems.find(item => item.id === orderForm.item);
@@ -2535,6 +2552,7 @@ id,
                         <Clock size={12} /> {t('prof.uniform.analysis')}
                       </span>
                     )}
+
                     {order.proof_url && (
                       <button
                         onClick={() => handleViewPaymentProof(order.proof_url!, order.item + ' Comprovante')}
@@ -2553,6 +2571,16 @@ id,
         </div>
       )}
 
+
+      {profView === 'store' && (
+        <div className="animate-fade-in">
+          <StoreCatalog 
+            items={uniformItems} 
+            prices={uniformPrices}
+            onBack={() => setProfView('dashboard')}
+          />
+        </div>
+      )}
 
       {/* --- DEFAULT DASHBOARD --- */
         profView === 'dashboard' && (
@@ -2616,7 +2644,7 @@ id,
               </Button>
               <Button onClick={() => setProfView('store')} className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-amber-900 to-amber-700 hover:from-amber-800 hover:to-amber-600 border border-amber-500/30">
                 <ShoppingBag size={28} className="text-amber-300" />
-                <span className="text-sm font-bold">Nossa Loja Virtual</span>
+                <span className="text-sm font-bold">{t('aluno.store.title')}</span>
                 <span className="text-xs text-amber-200">Catálogo</span>
               </Button>
               <Button onClick={() => setProfView('financial')} className="h-24 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-sky-50 to-stone-700 hover:from-sky-100 hover:to-stone-600 border border-stone-500/30">

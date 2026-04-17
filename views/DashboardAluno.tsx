@@ -5,6 +5,7 @@ import { APPoints } from './APPoints';
 import { useLanguage } from '../src/i18n/LanguageContext';
 import { Calendar, Award, Music, Video, Instagram, MapPin, Copy, Check, Ticket, Wallet, Info, X, UploadCloud, Clock, AlertTriangle, ArrowLeft, AlertCircle, GraduationCap, FileText, Shirt, ShoppingBag, Camera, Eye, PlayCircle, DollarSign, FileUp, MessageCircle, PlusCircle, Activity, BookOpen, CheckCircle } from 'lucide-react';
 import { Button } from '../components/Button';
+import { StoreCatalog } from '../components/StoreCatalog';
 import { supabase } from '../src/integrations/supabase/client';
 import { Logo } from '../components/Logo';
 import heic2any from 'heic2any';
@@ -2244,44 +2245,11 @@ export const DashboardAluno: React.FC<Props> = ({
           )}
 
           {activeMainTab === 'store' && (
-            <div className="bg-sky-100 rounded-xl p-6 border border-sky-300 animate-fade-in">
-              <Button variant="ghost" className="mb-4 text-gray-600 p-0 hover:text-gray-900" onClick={() => setActiveMainTab('overview')}>
-                <ArrowLeft size={16} className="mr-2" />
-                Voltar ao Painel
-              </Button>
-              <div className="flex items-center justify-between gap-4 mb-6">
-                <div>
-                  <h3 className="text-2xl font-black text-gray-900 flex items-center gap-2">
-                    <ShoppingBag className="text-amber-600" /> Nossa Loja Virtual
-                  </h3>
-                  <p className="text-sm text-gray-600">Itens especiais e personalizados do grupo.</p>
-                </div>
-                <span className="text-[10px] font-black bg-white border border-sky-200 px-3 py-1 rounded-full text-gray-600">{uniformItems.length} ITENS</span>
-              </div>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {uniformItems.length > 0 ? (
-                  uniformItems.map(item => (
-                    <div key={item.id} className="bg-white rounded-2xl border border-sky-200 overflow-hidden shadow-sm">
-                      <img src={item.image_url} alt={item.title} className="w-full h-44 object-cover bg-sky-100" />
-                      <div className="p-4 space-y-3">
-                        <div>
-                          <h4 className="font-black text-gray-900">{item.title}</h4>
-                          <p className="text-sm font-bold text-emerald-700">{item.price != null ? `R$ ${Number(item.price).toFixed(2).replace('.', ',')}` : 'Sob consulta'}</p>
-                        </div>
-                        {item.description && <p className="text-gray-600 text-sm line-clamp-3">{item.description}</p>}
-                        <Button fullWidth onClick={() => handleOrderStoreItem(item)}>
-                          <ShoppingBag size={16} className="mr-2" /> Pedir este item
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="sm:col-span-2 lg:col-span-3 py-16 bg-white rounded-2xl border-2 border-dashed border-sky-300 text-center text-gray-600 font-bold">
-                    Nenhum item cadastrado ainda.
-                  </div>
-                )}
-              </div>
-            </div>
+            <StoreCatalog 
+              items={uniformItems} 
+              prices={uniformPrices}
+              onBack={() => setActiveMainTab('overview')}
+            />
           )}
 
           {/* ── APPoints ── */}

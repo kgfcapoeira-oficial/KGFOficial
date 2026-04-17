@@ -102,6 +102,10 @@ const translations = {
     'common.done': 'Concluído',
     'common.view_all': 'Ver Todos',
     'common.add_new': 'Adicionar Novo',
+    'common.catalog': 'Catálogo',
+    'common.items': 'Itens',
+    'common.back_home': 'Voltar ao Início',
+    'common.learn_more': 'Saiba Mais',
 
     // ── Status labels ────────────────────────────────────────
     'status.pending': 'Pendente',
@@ -285,6 +289,16 @@ const translations = {
     'aluno.uniform.status': 'Situação',
     'aluno.uniform.confirmed': 'Confirmado',
     'aluno.uniform.empty': 'Nenhum pedido de uniforme encontrado.',
+    
+    // ── Store ───────────────────────────────────────────────
+    'aluno.store.title': 'Nossa Loja Virtual',
+    'aluno.store.subtitle': 'Acompanhe nosso catálogo de itens personalizados e acessórios.',
+    'aluno.store.order': 'Pedir este item',
+    'aluno.store.no_items': 'Opa! Nada por aqui ainda.',
+    'aluno.store.no_items_desc': 'Nosso catálogo está sendo atualizado. Volte em breve!',
+    'store.public_info_title': 'Interessado?',
+    'store.public_info_desc': 'Faça login ou procure um instrutor para adquirir.',
+    'store.how_to_buy': 'Como funcionam os pedidos?',
 
     'aluno.grades.theory': 'Teoria',
     'aluno.grades.movement': 'Movimentação',

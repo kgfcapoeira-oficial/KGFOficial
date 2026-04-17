@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { LanguageProvider } from './src/i18n/LanguageContext';
 import { Navbar } from './components/Navbar';
 import { Landing } from './views/Landing';
+import { StoreCatalog } from './components/StoreCatalog';
+
 import { Auth } from './views/Auth';
 import { DashboardAluno } from './views/DashboardAluno';
 import { DashboardProfessor } from './views/DashboardProfessor';
@@ -115,6 +117,42 @@ function AppContent() {
   }, [session, user]);
 
   // --- Data Fetching from Supabase ---
+  const fetchPublicData = useCallback(async () => {
+    // Fetch Active Banner
+    const { data: bannerData, error: bannerError } = await supabase
+      .from('event_banners')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (bannerError) console.error('Error fetching banner:', bannerError);
+    else setActiveBanner(bannerData);
+
+    // Fetch Uniform Prices
+    const { data: uniformPricesData, error: uniformPricesError } = await supabase.from('uniform_prices').select('*');
+    if (!uniformPricesError && uniformPricesData) {
+      const pricesConfig: Record<string, number> = { shirt: 0, pants_roda: 0, pants_train: 0, combo: 0 };
+      uniformPricesData.forEach((row: any) => {
+        pricesConfig[row.item] = row.price;
+      });
+      setUniformPrices(pricesConfig);
+    }
+
+    // Fetch Uniform Items
+    const { data: uniformItemsData, error: uniformItemsError } = await supabase
+      .from('uniform_items')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (uniformItemsError) console.error('Error fetching uniform items:', uniformItemsError);
+    else setUniformItems(uniformItemsData || []);
+  }, []);
+
+  useEffect(() => {
+    fetchPublicData();
+  }, [fetchPublicData]);
+
   const fetchData = useCallback(async () => {
     if (!session || !user) return; // Depende do usuário estar definido
 
@@ -148,22 +186,6 @@ function AppContent() {
       setAllUsersProfiles(mappedProfiles);
     }
 
-    // Fetch Group Events
-    const { data: eventsData, error: eventsError } = await supabase.from('events').select('*');
-    if (eventsError) console.error('Error fetching events:', eventsError);
-    else setEvents((eventsData || []).filter(ev => ev.status !== 'cancelled'));
-
-    // Fetch Active Banner
-    const { data: bannerData, error: bannerError } = await supabase
-      .from('event_banners')
-      .select('*')
-      .eq('active', true)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (bannerError) console.error('Error fetching banner:', bannerError);
-    else setActiveBanner(bannerData);
 
     // Fetch Music Items
     const { data: musicData, error: musicError } = await supabase.from('music').select('*');
@@ -179,21 +201,10 @@ function AppContent() {
     if (uniformError) console.error('Error fetching uniform orders:', uniformError);
     else setUniformOrders(uniformData || []);
 
-    const { data: uniformPricesData, error: uniformPricesError } = await supabase.from('uniform_prices').select('*');
-    if (!uniformPricesError && uniformPricesData) {
-      const pricesConfig: Record<string, number> = { shirt: 0, pants_roda: 0, pants_train: 0, combo: 0 };
-      uniformPricesData.forEach((row: any) => {
-        pricesConfig[row.item] = row.price;
-      });
-      setUniformPrices(pricesConfig);
-    }
-
-    const { data: uniformItemsData, error: uniformItemsError } = await supabase
-      .from('uniform_items')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (uniformItemsError) console.error('Error fetching uniform items:', uniformItemsError);
-    else setUniformItems(uniformItemsData || []);
+    // Fetch Group Events
+    const { data: eventsData, error: eventsError } = await supabase.from('events').select('*');
+    if (eventsError) console.error('Error fetching events:', eventsError);
+    else setEvents((eventsData || []).filter(ev => ev.status !== 'cancelled'));
 
     // Fetch Admin Notifications (for all admin users - shows all users' activities)
     if (userRole === 'admin') {
@@ -1166,8 +1177,24 @@ function AppContent() {
       return <Auth onLogin={handleLogin} onBack={() => setCurrentView('home')} />;
     }
 
+    if (currentView === 'store') {
+      return (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <StoreCatalog 
+            items={uniformItems} 
+            prices={uniformPrices} 
+            onBack={() => setCurrentView('home')} 
+            isPublic={true}
+          />
+        </div>
+      );
+    }
+
     if (!user) {
-      return <Landing onLoginClick={() => setCurrentView('login')} />;
+      return <Landing 
+        onLoginClick={() => setCurrentView('login')} 
+        onOpenStore={() => setCurrentView('store')}
+      />;
     }
 
     if (user) {
